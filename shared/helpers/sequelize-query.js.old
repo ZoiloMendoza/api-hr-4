@@ -1,0 +1,150 @@
+const { Op, fn, col, where } = require("sequelize");
+
+// Extend our operator mapping to include common operators.
+const operatorMapping = {
+  "~": Op.like,
+  "!~": Op.notLike,
+  "<": Op.lt,
+  ">": Op.gt,
+  "<=": Op.lte,
+  ">=": Op.gte,
+  "!=": Op.ne,
+  "between": Op.between,
+};
+
+/**
+ * Process a single condition for an operator.
+ * Supports literal values and field-based references.
+ */
+function processSingleCondition(op, value, parentAlias, fieldName) {
+  // If value is a field-based reference, detect it.
+  if (typeof value === "object" && value.field) {
+    const { alias, field } = value.field;
+    if (!alias || !field) {
+      throw new Error("Field reference must specify both alias and field");
+    }
+    return { [operatorMapping[op]]: col(`${alias}.${field}`) };
+  }
+
+  // For LIKE operators, automatically add wildcards if needed.
+  if (op === "~" || op === "!~") {
+    if (typeof value === "string") {
+      if (!value.startsWith("%")) value = "%" + value;
+      if (!value.endsWith("%")) value = value + "%";
+    }
+    return { [operatorMapping[op]]: value };
+  }
+
+  // For other operators, map directly.
+  if (operatorMapping[op]) {
+    return { [operatorMapping[op]]: value };
+  }
+
+  // Fallback: return the raw value.
+  return value;
+}
+
+/**
+ * Process field conditions with support for logical operators:
+ * - $or: an array of condition objects (combined with OR)
+ * - $and: an array of condition objects (combined with AND)
+ * - $not: a condition object (negated)
+ * Other operators are combined by default with AND.
+ */
+function processFieldConditions(fieldConditions, parentAlias, fieldName) {
+  let conditions = [];
+
+  // Handle $or if present.
+  if (fieldConditions.$or) {
+    const orConditions = fieldConditions.$or.map(condObj => {
+      // Each condition object in $or is processed recursively.
+      return processFieldConditions(condObj, parentAlias, fieldName);
+    });
+    conditions.push({ [Op.or]: orConditions });
+  }
+
+  // Handle $and if present.
+  if (fieldConditions.$and) {
+    const andConditions = fieldConditions.$and.map(condObj => {
+      return processFieldConditions(condObj, parentAlias, fieldName);
+    });
+    conditions.push({ [Op.and]: andConditions });
+  }
+
+  // Handle $not if present.
+  if (fieldConditions.$not) {
+    let notCondition;
+    if (Array.isArray(fieldConditions.$not)) {
+      // Combine multiple conditions with AND and then negate.
+      const notConds = fieldConditions.$not.map(condObj =>
+        processFieldConditions(condObj, parentAlias, fieldName)
+      );
+      notCondition = { [Op.and]: notConds };
+    } else {
+      notCondition = processFieldConditions(fieldConditions.$not, parentAlias, fieldName);
+    }
+    conditions.push({ [Op.not]: notCondition });
+  }
+
+  // Process any remaining operators that are not special logical keys.
+  const reservedKeys = ["$or", "$and", "$not"];
+  const remaining = {};
+  Object.keys(fieldConditions).forEach(key => {
+    if (!reservedKeys.includes(key)) {
+      remaining[key] = fieldConditions[key];
+    }
+  });
+
+  Object.keys(remaining).forEach(op => {
+    const value = remaining[op];
+    if (Array.isArray(value)) {
+      value.forEach(val => {
+        conditions.push(processSingleCondition(op, val, parentAlias, fieldName));
+      });
+    } else {
+      conditions.push(processSingleCondition(op, value, parentAlias, fieldName));
+    }
+  });
+
+  if (conditions.length === 0) return {};
+  if (conditions.length === 1) return conditions[0];
+  return { [Op.and]: conditions };
+}
+
+/**
+ * Build a Sequelize query using our DSL.
+ * Processes main model attributes and associations.
+ */
+function buildQuery(mainModel, queryObject) {
+  const { filters = {}, get = {} } = queryObject;
+  const mainWhere = {};
+  const include = [];
+
+  for (const key in filters) {
+    // If key is a main model attribute.
+    if (mainModel.rawAttributes.hasOwnProperty(key)) {
+      mainWhere[key] = processFieldConditions(filters[key], mainModel.name, key);
+    }
+    // Otherwise, assume it's an association.
+    else if (mainModel.associations[key]) {
+      const assocFilter = filters[key];
+      const assocWhere = {};
+      for (const field in assocFilter) {
+        assocWhere[field] = processFieldConditions(assocFilter[field], key, field);
+      }
+      include.push({
+        model: mainModel.associations[key].target,
+        as: key,
+        where: assocWhere,
+        attributes: (get[key] && !get[key].includes("*")) ? get[key] : undefined,
+      });
+    } else {
+      throw new Error(`Invalid filter key '${key}' for model ${mainModel.name}.`);
+    }
+  }
+
+  const mainAttributes = (get.main && !get.main.includes("*")) ? get.main : undefined;
+  return { where: mainWhere, attributes: mainAttributes, include };
+}
+
+module.exports = { buildQuery };

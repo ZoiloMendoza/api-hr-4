@@ -1,0 +1,54 @@
+const Joi = require('joi');
+const BaseValidator = require('./base-validator');
+const { mapSequelizeTypeToJoi} = require('./joyutils');
+
+const noValidate = ['id', 'active', 'companyId', 'createdAt', 'updatedAt'];
+
+class CRUDValidator extends BaseValidator {
+    modelName = null;
+
+    constructor(model) {
+        super(model.getTableName().toLowerCase());
+        this.omitRequired = {};
+        this.forceRequired = {};
+        this.model = model;
+        this.schema = this.generateSchema();
+        this.modelName = model.getTableName().toLowerCase();
+        if (this.modelName.endsWith('s')) {
+            this.modelName = this.modelName.slice(0, -1);
+        }
+
+        this.routes.post[`/${this.modelName}`] = this.genValidator();
+        this.routes.put[`/${this.modelName}/:id`] = this.genValidator();
+        this.routes.get[`/${this.modelName}/:id`] = false;
+        this.routes.get[`/${this.modelName}s`] = false;
+        this.routes.delete[`/${this.modelName}/:id`] = false;
+    }
+
+    
+    generateSchema() {
+        const joiSchema = {};
+        logger.info(
+            'Generating Joi schema for Sequelize model ' + this.model.name,
+        );
+        // Iterate over each field in the Sequelize model
+        for (const [field, definition] of Object.entries(
+            this.model.rawAttributes,
+        )) {    
+            if (!noValidate.includes(field)) {
+                let joiFieldSchema = mapSequelizeTypeToJoi(
+                    field,
+                    definition,
+                );
+
+                // Add the field schema to the final Joi schema
+                joiSchema[field] = joiFieldSchema;
+            }
+        }
+
+        // Return the final Joi schema
+        return Joi.object(joiSchema).options({ stripUnknown: true });
+    }
+}
+
+module.exports = CRUDValidator;

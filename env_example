@@ -1,0 +1,11 @@
+DB_DIALECT=mysql
+DB_HOST=localhost
+DB_NAME=mydb
+DB_USER=root
+DB_PASSWORD=mypassword
+DB_PORT=3306
+DB_SSL=true
+LOG_LEVEL=info
+PORT = 3000
+JWT_SEED="supersecret_seed"
+JWT_LIFESPAN=1d
