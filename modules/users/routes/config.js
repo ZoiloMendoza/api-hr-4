@@ -1,5 +1,5 @@
 const { BaseController } = helpers;
-const { User } = models;
+const { user } = models;
 const validator = require('../validators/firstconfig');
 const {  companiesService, usersService } = services;
 
@@ -8,7 +8,7 @@ class ConfigController extends BaseController{
         super("firstconfig");
         this.neededROLE = false;
 
-         User.count(). then((numUsers) => {
+         user.count(). then((numUsers) => {
             if (numUsers === 0){
                 validator.setValidation(true);
                 logger.info("First configuration needed");

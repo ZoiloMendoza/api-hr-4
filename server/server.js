@@ -101,7 +101,7 @@ function loadRoutes(app, folder) {
     
     global.models = require("../shared/models");
     global.services = require("../shared/services");
-    global.validatorS = require("../shared/validators");
+    global.validators = require("../shared/validators");
         
     await runMigrations();
     

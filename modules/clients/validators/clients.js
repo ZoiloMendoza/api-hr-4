@@ -1,9 +1,9 @@
 const { CRUDValidator } = helpers;
-const { Client } = models;
+const { client } = models;
 
 class ClientValidator extends CRUDValidator {
     constructor() {
-        super(Client);
+        super(client);
     }
 }
 

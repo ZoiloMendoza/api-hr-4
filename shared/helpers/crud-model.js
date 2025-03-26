@@ -1,6 +1,6 @@
-const { Model } = require("sequelize");
+const BaseModel = require('./base-model');
 
-class CRUDModel extends Model {
+class CRUDModel extends BaseModel {
     static privateFields = {"active": true, "updatedAt": true, "createdAt": true};
     static excludeField(fieldName) {
         //copy the object, to reflect in subclass only

@@ -138,11 +138,15 @@ function generateObjectRule(joiSchema) {
                       'number.base': i18n.__('error.validation.string', field),
                   });
                   break;
-              case DataTypes.JSON.key:
+              case "JSON_CRUD":
                   //chanhe me
                   joiSchema = Joi.string().messages({
                       'string.base': i18n.__('error.validation.string', field),
                   });
+                  break;
+              case DataTypes.VIRTUAL.key:
+                  // Virtual fields should not be sent!
+                  joiSchema = Joi.forbidden();
                   break;
               default:
                   throw new Error(

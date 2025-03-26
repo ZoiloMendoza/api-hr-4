@@ -1,10 +1,10 @@
 const { CRUDValidator } = helpers;
-const { User } = models;
+const { user } = models;
 const Joi = require('joi');
 
 class UserValidator extends CRUDValidator {
     constructor() {
-        super(User);
+        super(user);
 
         // Replace the schema for user update, password is ignored
         const updateValidator = this.schema.fork(['password'], (schema) => schema.optional().strip());

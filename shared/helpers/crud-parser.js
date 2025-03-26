@@ -31,9 +31,8 @@ class CRUDParser {
     model = null;
     parser = null;
     genGrammar() {
-
+      logger.info("Generating grammar for model " + this.model.name);
       const tvect = modelHelper.getTypesVector();
-
       
 
         let  grammar = `Clause
@@ -68,7 +67,7 @@ BooleanValue
   = "true" { return { type: "booleanLiteral", value: true }; }
   / "false" { return { type: "booleanLiteral", value: false }; }
   / "!" _ value:BooleanValue { return { type: "booleanNot", value }; }
-  / UsersBooleanField
+  / ${this.model.name.toLowerCase()}BooleanField
 
 
 StringComparisonClause
@@ -114,7 +113,7 @@ DateValue
       }
       return result;
     }
-  / field:${this.model.getTableName()}DateField arithmetics:(_ DateArithmetic)* {
+  / field:${this.model.name.toLowerCase()}DateField arithmetics:(_ DateArithmetic)* {
       let result = field;
       if(arithmetics.length) {
         arithmetics.forEach(item => {
@@ -178,7 +177,7 @@ Unary
 
 PrimaryNumeric
   = NumberLiteral
-  / ${this.model.getTableName()}NumberField
+  / ${this.model.name.toLowerCase()}NumberField
   / "round" _ "(" _ expr:NumericValue _ ")" { return { type: "round", value: expr }; }
   / "(" _ expr:NumericValue _ ")" { return expr; }
 
@@ -188,7 +187,7 @@ NumberLiteral
   }
 
 StringValue
-  = head:(StringLiteral / ${this.model.getTableName()}StringField) tail:(_ "||" _ (StringLiteral / ${this.model.getTableName()}StringField))*
+  = head:(StringLiteral / ${this.model.name.toLowerCase()}StringField) tail:(_ "||" _ (StringLiteral / ${this.model.name.toLowerCase()}StringField))*
     {
       let tmp =  tail.reduce((acc, cur) => {
         // cur is an array where cur[3] is the right-hand value.
@@ -218,17 +217,24 @@ _ "whitespace"
 const fields = {};
       for (let bType of modelHelper.basicTypes) {
         for(let o of Object.keys(models)) {
+          if (["sequelize","Sequelize"].includes(o)) {
+            continue;
+          }
           const m = models[o];
-          if (m.getTableName) {
-            if (tvect[bType][m.getTableName()]) {
-              fields[m.getTableName() + bType] = [];
-              for (let mType of tvect[bType][m.getTableName()]) {
+          if (m.name) {
+            logger.trace(m.name + " ->" + bType)
+            fields[m.name.toLowerCase() + bType] = [];
+            if (tvect[bType][m.name.toLowerCase()]) {
+              for (let mType of tvect[bType][m.name.toLowerCase()]) {
                 if (mType.basic) {
-                  fields[m.getTableName() + bType].push(`"${mType.name}" { return  {"type": "field", value: "${mType.name}", "path": "/"}; }`)
+                  fields[m.name.toLowerCase() + bType].push(`"${mType.name}" { return  {"type": "field", value: "${mType.name}", "path": "/"}; }`)
                 } else {
-                  fields[m.getTableName() + bType].push(`"${mType.name}." f:${mType.target}StringField { return  {"type": "field", value: f.value, "path": "/${mType.target}" + f.path}; }`);
+                  fields[m.name.toLowerCase() + bType].push(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: f.value, "path": "/${mType.target}" + f.path}; }`);
                 } 
               }
+            } else {
+              logger.trace(`No fields for ${m.name.toLowerCase()}${bType}`);
+              fields[m.name.toLowerCase() + bType].push(`!("") { }`) 
             }
           }
         }
@@ -254,7 +260,7 @@ const fields = {};
         //console.log(grammar )
         // Compile the grammar
         this.parser = peggy.generate(grammar);
-        logger.info("Parser initialized for model " + this.model.name);
+        logger.info("Parser initialized for model " + this.model.name.toLowerCase());
     }
 
     parse(q , isActive = true) {

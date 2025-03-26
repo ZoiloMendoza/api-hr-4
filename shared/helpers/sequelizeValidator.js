@@ -6,12 +6,12 @@ class SequelizeValidator extends BaseValidator {
     joiSchema = null;
 
     constructor(model, fields, isList = false) {
-      super(`${model.getTableName()}-${fields.join('-')}`);
+      super(`${model.name.toLowerCase()}-${fields.join('-')}`);
         const joiFields = {};
 
         for (let field of fields) {
             if (!model.rawAttributes[field]) {
-                throw new Error(`Field ${field} not found in model ${model.name}`);
+                throw new Error(`Field ${field} not found in model ${model.name.toLowerCase()}`);
             }
             const definition = model.rawAttributes[field];
             

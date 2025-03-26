@@ -1,4 +1,4 @@
-const { Role } = models;   
+const { role } = models;   
 
 const { CRUDController } = helpers;
 
@@ -8,6 +8,6 @@ class RoleController extends CRUDController {
     }
 }
 
-const myself = new RoleController(Role);
+const myself = new RoleController(role);
 
 module.exports = myself.getApp();

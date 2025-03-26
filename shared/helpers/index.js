@@ -1,6 +1,7 @@
 
 module.exports = {
     "BaseController": require('./base-controller'),
+    "BaseModel": require('./base-model'),
     "BaseModule": require('./base-module'),
     "BaseService": require('./base-service'),
     "BaseValidator": require('./base-validator'),
@@ -16,5 +17,6 @@ module.exports = {
     "SearchResult": require('./search-result'),
     "sequelize": require('./sequelize'),
     "sequelizeQuery": require('./sequelize-query'),
-    "modelsGraph": require('./model-helper')
+    "modelsGraph": require('./model-helper'),
+    "CrudJsonType": require('./crud-jsonType')
 };

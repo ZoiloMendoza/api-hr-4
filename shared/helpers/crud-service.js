@@ -1,6 +1,6 @@
 const BaseService = require('./base-service');
 const { EntityNotFoundError } = require('./entity-errors');
-const { DataTypes, Op } = require('sequelize');
+const { DataTypes, Op, Utils } = require('sequelize');
 const entityErrors = require('./entity-errors');
 const { translateAST } = require('./sequelize-query');
 
@@ -10,12 +10,9 @@ class CRUDService extends BaseService {
     relations = {};
 
     constructor(model) {
-        super(model.getTableName().toLowerCase());
+        super(model.name.toLowerCase());
         this.model = model;
-        this.modelName = model.getTableName().toLowerCase();
-        if (this.modelName.endsWith('s')) {
-            this.modelName = this.modelName.slice(0, -1);
-        }
+        this.modelName = model.name.toLowerCase();
         this.hasCompany = this.model.rawAttributes.companyId !== undefined;
         this.addJsonMethods()
     }
@@ -31,21 +28,22 @@ class CRUDService extends BaseService {
     }
 
     addRelation(OtherModel, fields) {
-        logger.info(`Adding relation from ${this.model.getTableName()} to ${OtherModel.getTableName()}`);
-        if (this.relations[OtherModel.getTableName()]) {
+        const otherModelName = Utils.pluralize(OtherModel.name);
+        logger.info(`Adding relation from ${this.model.name} to ${otherModelName}`);
+        if (this.relations[otherModelName]) {
             throw new Error('Relation already added');
         }
         for (let association of Object.values(this.model.associations)) {
             if (association.target === OtherModel) {
-                this.relations[OtherModel.getTableName()] = association;
+                this.relations[otherModelName] = association;
 
                 logger.info(`Relation found: ${association.associationType}`);
                 switch (association.associationType) {
                     case 'BelongsToMany':
-                        logger.info(`Adding method assign${OtherModel.getTableName()}`);
-                        this[`assign${OtherModel.getTableName()}`] = this.getAddRelatedList(OtherModel, fields);
-                        logger.info(`Adding method remove${OtherModel.getTableName()}`);
-                        this[`remove${OtherModel.getTableName()}`] = this.getRemoveRelatedList(OtherModel, fields);
+                        logger.info(`Adding method assign${otherModelName}`);
+                        this[`assign${otherModelName}`] = this.getAddRelatedList(OtherModel, fields);
+                        logger.info(`Adding method remove${otherModelName}`);
+                        this[`remove${otherModelName}`] = this.getRemoveRelatedList(OtherModel, fields);
                         return association;
                     default:
                         throw new Error('Relation not supported');
@@ -204,6 +202,7 @@ class CRUDService extends BaseService {
     }
 
     getRemoveRelatedList(relatedModel, fields) {
+        const relatedModelName = Utils.pluralize(relatedModel.name);
         let result = async(id, lookup) => {
             if (lookup.length === 0) {
                 throw new Error( i18n.__('No elements to add'));
@@ -273,13 +272,13 @@ class CRUDService extends BaseService {
                     );
                     if (missingElements.length > 0) {
                         throw new entityErrors.EntityNotFoundError(
-                            i18n.__('missing entities', relatedModel.getTableName(), missingElements.join(',')),
+                            i18n.__('missing entities', relatedModelName, missingElements.join(',')),
                         );
                     }
                 }
                 const toRemove = [];
                 for (const relElem of relatedElems) {
-                    if (!elem[relatedModel.getTableName()].some(obj => {
+                    if (!elem[relatedModelName].some(obj => {
                         for (let f of fields) {
                             if (obj[f] !== relElem[f]) {
                                 return false;
@@ -292,11 +291,11 @@ class CRUDService extends BaseService {
                             if (key in relElem) obj.txt += ` ${relElem[key]}`;
                             return obj;
                           }, {})
-                        throw new entityErrors.EntityNotFoundError(i18n.__('not associated', relatedModel.getTableName(), e.txt ));
+                        throw new entityErrors.EntityNotFoundError(i18n.__('not associated', relatedModelName, e.txt ));
                     }
                     toRemove.push(relElem);
                 }
-                await elem[`remove${relatedModel.getTableName()}`](toRemove);
+                await elem[`remove${relatedModelName}`](toRemove);
                 
                 await elem.reload({ include: [ {
                     model: relatedModel,
@@ -315,6 +314,7 @@ class CRUDService extends BaseService {
     }
 
     getAddRelatedList(relatedModel, fields) {
+        const relatedModelName = Utils.pluralize(relatedModel.name);
         let result = async(id, lookup) => {
             if (lookup.length === 0) {
                 throw new Error( i18n.__('No elements to add'));
@@ -380,7 +380,7 @@ class CRUDService extends BaseService {
                     );
                     if (missingElements.length > 0) {
                         throw new entityErrors.EntityNotFoundError(
-                            i18n.__('missing entities', relatedModel.getTableName(), missingElements.join(',')),
+                            i18n.__('missing entities', relatedModelName, missingElements.join(',')),
                         );
                     }
                 }
@@ -391,7 +391,7 @@ class CRUDService extends BaseService {
                     /*if (elem.Roles.some(obj => obj.name === role.name)) {
                          throw new entityErrors.DuplicateEntityError(i18n.__('duplicate role', role.name)); 
                     }*/
-                    await elem[`add${relatedModel.getTableName()}`](relatedElems);
+                    await elem[`add${relatedModelName}`](relatedElems);
                  }
                  await elem.reload({ include: [ {
                      model: relatedModel,

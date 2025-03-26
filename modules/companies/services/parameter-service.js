@@ -1,4 +1,4 @@
-const {Parameter} = models
+const {parameter} = models
 const { Op } = require('sequelize');
 const NodeCache = require("node-cache");
 const myCache = new NodeCache();
@@ -6,7 +6,7 @@ const myCache = new NodeCache();
 const getParameter = async (companyId, name) => {
   let parameter = myCache.get(`${name}_${companyId}`);
   if (parameter === undefined) {
-    parameter = await Parameter.findOne({ where: { name: name, companyId: companyId } });
+    parameter = await parameter.findOne({ where: { name: name, companyId: companyId } });
     if (parameter) {
       myCache.set(`${name}_${companyId}`, parameter);
     } else {
@@ -17,7 +17,7 @@ const getParameter = async (companyId, name) => {
 };
 
 const getParameters = async (companyId, params) => {
-    const parameters = await Parameter.findAll({
+    const parameters = await parameter.findAll({
         where: {
             name: {
                 [Op.in]: params
@@ -32,7 +32,7 @@ const getParameters = async (companyId, params) => {
 const addParameter = async (companyId, name, value) => {
     logger.info(`Adding parameter ${name}`);
     try {
-        const parameter = await Parameter.create({ name, value, companyId });
+        const parameter = await parameter.create({ name, value, companyId });
         myCache.set(`${name}_${companyId}`, parameter);
         return parameter.value;
     } catch (error) {
@@ -43,7 +43,7 @@ const addParameter = async (companyId, name, value) => {
 
 const updateParameter = async (companyId, name, value) => {
     try {
-        const updatedRows = await Parameter.update({ value }, { where: { name, companyId } });
+        const updatedRows = await parameter.update({ value }, { where: { name, companyId } });
         if (updatedRows === 0) {
             return null;
         }

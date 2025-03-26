@@ -1,10 +1,10 @@
-const { Role } = models;
+const { role } = models;
 
 const { CRUDService } = helpers;
 
 class RolesService extends CRUDService {
     constructor() {
-        super(Role);
+        super(role);
     }
 }
 

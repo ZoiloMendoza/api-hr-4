@@ -1,5 +1,5 @@
 const Graph = require('graphology');
-
+const CrudJsonType = require('./crud-jsonType');
 
 class ModelHelper {
   graph = null;
@@ -13,6 +13,7 @@ class ModelHelper {
   }
 
   basicTypes = ["Number", "String", "Boolean", "Date"];
+  jsonTypes = [];
 
   // Helper: map Sequelize attribute type to our basic type.
   mapAttributeType(attr) {
@@ -30,6 +31,12 @@ class ModelHelper {
         case "DATE":
         case "DATEONLY":
           return "Date";
+        case "VIRTUAL":
+          return null;
+        case "JSON_CRUD":
+          this.jsonTypes.push(attr);
+          //JSON_CRUD IS NOT A BASIC TYPE
+        return null;
         default:
           throw new Error(`Unsupported attribute type: ${attr.type.key}`);
       }
@@ -42,33 +49,37 @@ class ModelHelper {
     
     const nodes = {};
     const edges = [];
-  
+
     // Create nodes for basic types.
     this.basicTypes.forEach(type => {
       nodes[type] = { id: type, type: "basic" };
       this.typesVector[type] = {};
     });
-  
 
+  
     // Create nodes for each model.
     Object.keys(models).forEach(modelName => {
-        logger.trace(`Building graph data for model ${modelName}`);
+        this.jsonTypes.length = 0;
+        let skipModels = ["sequelize", "Sequelize"];
+        if (skipModels.includes(modelName)) return;
+        logger.info(`Building graph data for model ${modelName}`);
         const model = models[modelName];
-        nodes[model.tableName] = { id: model.tableName, type: "model" };
+        nodes[model.name.toLowerCase()] = { id: model.name.toLowerCase(), type: "model" };
         if (model.rawAttributes) {
             Object.keys(model.rawAttributes).forEach(attrName => {
               const attr = model.rawAttributes[attrName];
               const basicType = this.mapAttributeType(attr);
               if (basicType) {
-                logger.trace(`Adding edge from ${model.tableName} to ${basicType} with name ${attrName}`);               
-                if (!model.isExcluded(attrName)) {
-                  if (!this.typesVector[basicType][model.tableName]) {
-                    this.typesVector[basicType][model.tableName] = [];
+                logger.trace(`Adding edge from ${model.name.toLowerCase()} to ${basicType} with name ${attrName}`);  
+                
+                if ((!model.isExcluded) || (!model.isExcluded(attrName))) {
+                  if (!this.typesVector[basicType][model.name.toLowerCase()]) {
+                    this.typesVector[basicType][model.name.toLowerCase()] = [];
                   }
-                  this.typesVector[basicType][model.tableName].push({name: attrName, basic: true});
+                  this.typesVector[basicType][model.name.toLowerCase()].push({name: attrName, basic: true});
                 }
                 edges.push({
-                  from: model.tableName,
+                  from: model.name.toLowerCase(),
                   to: basicType,
                   label: attrName,
                   multiple: false  // Basic attribute holds a single value.
@@ -79,9 +90,7 @@ class ModelHelper {
         if (model.associations) {
             Object.keys(model.associations).forEach(assocName => {
               const assoc = model.associations[assocName];
-              //const targetModel = assoc.target;
-              //const targetName = targetModel.name || (targetModel.options && targetModel.options.name && targetModel.options.name.singular);
-              const targetName = model.associations[assocName].target.getTableName();
+              const targetName = model.associations[assocName].target.name.toLowerCase();
 
               if (!targetName) return;
       
@@ -108,23 +117,41 @@ class ModelHelper {
                 default:
                   break;
               }
-              logger.trace(`Adding edge from ${model.tableName} to ${targetName} with name ${assocName} (multiple: ${fromMultiple})`);
-              if (!model.isExcluded(assocName)) {
+              logger.trace(`Adding edge from ${model.name.toLowerCase()} to ${targetName} with name ${assocName} (multiple: ${fromMultiple})`);
+              if ((!model.isExcluded) || (!model.isExcluded(assocName))) {
                 this.basicTypes.forEach((bType)=>{
-                  if (!this.typesVector[bType][model.tableName]) {
-                    this.typesVector[bType][model.tableName] = [];
+                  if (!this.typesVector[bType][model.name.toLowerCase()]) {
+                    this.typesVector[bType][model.name.toLowerCase()] = [];
                   }
-                  this.typesVector[bType][model.tableName].push({name: assocName, basic: false, target: targetName});
+                  this.typesVector[bType][model.name.toLowerCase()].push({name: assocName, basic: false, target: targetName});
                 });
               }
               edges.push({
-                from: model.tableName,
+                from: model.name.toLowerCase(),
                 to: targetName,
                 label: assocName,
                 multiple: fromMultiple
               });
             });
           }  
+          for (let attr of this.jsonTypes) {
+            const targetName = attr.type.model.name.toLowerCase()
+            logger.trace(`Adding edge from ${model.name.toLowerCase()} to JSON  ${targetName} with name ${attr.field}`);
+            if ((!model.isExcluded) || (!model.isExcluded(attr.field))) {
+              this.basicTypes.forEach((bType)=>{
+                if (!this.typesVector[bType][model.name.toLowerCase()]) {
+                  this.typesVector[bType][model.name.toLowerCase()] = [];
+                }
+                this.typesVector[bType][model.name.toLowerCase()].push({name: attr.field, basic: false, target: targetName });
+              });
+            }
+            edges.push({
+              from: model.name.toLowerCase(),
+              to: targetName,
+              label: attr.field,
+              multiple: attr.type.isArray
+            });
+          }
     });
 
     return { nodes: Object.values(nodes), edges };

@@ -1,9 +1,9 @@
-const { Company } = models;
+const { company } = models;
 const { CRUDController } = helpers;
 
 class CompanyController extends CRUDController {
     constructor() {
-        super(Company, process.env.SYSADMIN_ROLE);
+        super(company, process.env.SYSADMIN_ROLE);
     }
 }
 module.exports = new CompanyController();

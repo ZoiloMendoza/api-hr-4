@@ -8,16 +8,13 @@ class CRUDValidator extends BaseValidator {
     modelName = null;
 
     constructor(model) {
-        super(model.getTableName().toLowerCase());
+        super(model.name.toLowerCase());
         this.omitRequired = {};
         this.forceRequired = {};
         this.model = model;
         this.schema = this.generateSchema();
-        this.modelName = model.getTableName().toLowerCase();
-        if (this.modelName.endsWith('s')) {
-            this.modelName = this.modelName.slice(0, -1);
-        }
-
+        this.modelName = model.name.toLowerCase();
+        
         this.routes.post[`/${this.modelName}`] = this.genValidator();
         this.routes.put[`/${this.modelName}/:id`] = this.genValidator();
         this.routes.get[`/${this.modelName}/:id`] = false;
@@ -29,7 +26,7 @@ class CRUDValidator extends BaseValidator {
     generateSchema() {
         const joiSchema = {};
         logger.info(
-            'Generating Joi schema for Sequelize model ' + this.model.name,
+            'Generating Joi schema for Sequelize model ' + this.model.name.toLowerCase(),
         );
         // Iterate over each field in the Sequelize model
         for (const [field, definition] of Object.entries(

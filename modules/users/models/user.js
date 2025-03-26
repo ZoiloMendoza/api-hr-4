@@ -2,17 +2,17 @@
 module.exports = (sequelize, DataTypes) => {
     class User extends helpers.CRUDModel {
         static associate(models) {
-            User.belongsToMany(models.Role, {
+            User.belongsToMany(models.role, {
                 through: 'UserRole',
                 foreignKey: 'userId',
                 otherKey: 'roleId',
                 as: 'roles'
             });
-            User.belongsTo(models.Company, {
+            User.belongsTo(models.company, {
                 foreignKey: 'companyId',
                 as: 'company',
             });
-            User.belongsTo(models.Client, {
+            User.belongsTo(models.client, {
                 foreignKey: 'clientId',
                 as: 'client',
             });

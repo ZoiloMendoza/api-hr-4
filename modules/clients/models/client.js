@@ -1,3 +1,4 @@
+const {CrudJsonType} = helpers;
 
 module.exports = (sequelize, DataTypes) => {
     class Client extends helpers.CRUDModel {
@@ -7,16 +8,17 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            Client.belongsTo(models.Company, {
+            Client.belongsTo(models.company, {
                 foreignKey: 'companyId',
                 as: 'company',
             });
-            Client.hasMany(models.User, {
+            Client.hasMany(models.user, {
                 foreignKey: 'clientId',
                 as: 'users',
             });
         }
     }
+    const Address = require('./address')(sequelize, DataTypes);
     Client.init(
         {
             name: DataTypes.STRING,
@@ -24,6 +26,18 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
+            addresses: {
+                type: new CrudJsonType(Address, true),
+                validate: {
+                    isValidAddressesArray(value) {
+                        const { error } = this.validator.schema.validate(value, { abortEarly: false });
+                        if (error) {
+                          throw new Error(`Address validation failed: ${error.message}`);
+                        }
+                
+                     }
+                }
+            },            
             active: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,

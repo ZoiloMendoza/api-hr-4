@@ -1,7 +1,7 @@
 const { BaseController, SearchResult, CRUDParser, entityErrors } = helpers;
 const validator = require('../validators/catalog');
-const {CatalogService} = services;
-const { Catalog } = models;
+const {catalogService} = services;
+const { catalog } = models;
 
 class CatalogController extends BaseController {
     constructor() {
@@ -9,7 +9,7 @@ class CatalogController extends BaseController {
         this.neededROLE = false;
         this.setValidator(validator);
         this.initializeRoutes();
-        this.parser = new CRUDParser(Catalog);
+        this.parser = new CRUDParser(catalog);
     }
 
     initializeRoutes() {
@@ -40,7 +40,7 @@ class CatalogController extends BaseController {
         const filter = this.parser.parse(req.query);
         
         try {
-            const catalogs = await CatalogService.getCatalogsAllType(filter);
+            const catalogs = await catalogService.getCatalogsAllType(filter);
             res.json(new SearchResult(catalogs, 1, catalogs.length, catalogs.length));
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {
@@ -59,8 +59,8 @@ class CatalogController extends BaseController {
             delete req.query.start;
             delete req.query.limit;
             const filter = this.parser.parse(req.query);
-            const catalog = await CatalogService.getCatalogElements(type, filter);
-            res.json(new SearchResult(catalog, 1, catalog.length, catalog.length));
+            const cat = await catalogService.getCatalogElements(type, filter);
+            res.json(new SearchResult(cat, 1, cat.length, cat.length));
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {
                 return res.status(404).json({ errors: [error.message] });
@@ -74,8 +74,8 @@ class CatalogController extends BaseController {
     async handleGet(req, res) {
         try {
             const { type, id } = req.params;
-            const catalog = await CatalogService.getCatalog(type, id);
-            res.json(catalog);
+            const cat = await catalogService.getCatalog(type, id);
+            res.json(cat);
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {
                 return res.status(404).json([error.message]);
@@ -89,8 +89,8 @@ class CatalogController extends BaseController {
     async handlePost(req, res) {
         try {
             const { type } = req.params;
-            const catalog = await CatalogService.addCatalog(type, req.input);
-            res.status(201).json(catalog);
+            const cat = await catalogService.addCatalog(type, req.input);
+            res.status(201).json(cat);
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {
                 return res.status(404).json([error.message]);
@@ -104,12 +104,12 @@ class CatalogController extends BaseController {
     async handlePut(req, res) {
         try {
             const { type, id } = req.params;
-            const catalog = await CatalogService.updateCatalog(
+            const cat = await catalogService.updateCatalog(
                 type,
                 id,
                 req.input,
             );
-            res.json(catalog);
+            res.json(cat);
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {
                 return res.status(404).json([error.message]);
@@ -121,7 +121,7 @@ class CatalogController extends BaseController {
     async handleDelete(req, res) {
         try {
             const { type, id } = req.params;
-            const result = await CatalogService.deleteCatalog(type, id);
+            const result = await catalogService.deleteCatalog(type, id);
             res.status(204).send();
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {

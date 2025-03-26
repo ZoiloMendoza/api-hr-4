@@ -1,5 +1,5 @@
 'use strict';
-const { User, Role,  Company } = models;
+const { user, role,  company } = models;
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { CRUDService, entityErrors } = helpers;
@@ -9,7 +9,7 @@ const { Op } = require('sequelize');
 
 class UserService extends CRUDService {
     constructor() {
-        super(User);
+        super(user);
     }
 
     generatePassword(length = 10) {
@@ -32,7 +32,7 @@ class UserService extends CRUDService {
 
     async createFirstUser(companyId, username) {
         logger.info(`Creating first user for company ${companyId} `);
-        const ucount = await User.count({ where: { companyId: companyId } });
+        const ucount = await user.count({ where: { companyId: companyId } });
         if (ucount > 0) {
             throw new error(i18n.__('entity already exists', 'Usuario'));
         }
@@ -44,7 +44,7 @@ class UserService extends CRUDService {
             fullname: username,
             active: true,
         };
-        const u = await User.create(user);
+        const u = await user.create(user);
         const roles = await Role.findAll    ({
             where: { name: { 
                 [Op.in]: [process.env.COMPANYADMIN_ROLE, process.env.SYSADMIN_ROLE] 
@@ -55,37 +55,23 @@ class UserService extends CRUDService {
         return {user: this.toJson(u), password: password};
     }
 
-    async createUser(user) {
-        user.password = bcrypt.hashSync(user.password, 10);
-        return this.toJson(super.create(user));
+    async createUser(u) {
+        u.password = bcrypt.hashSync(u.password, 10);
+        return this.toJson(super.create(u));
     }
 
     async requestPasswordReset(email) {
-        const user = await this.getUserByUsername(email);
+        const u = await this.getUserByUsername(email);
         
-        if (!user) {
+        if (!u) {
             throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'Usuario'));
         }
-        let toSign = { user: this.toJson(user) };
+        let toSign = { u: this.toJson(user) };
         const resetToken = JWT.sign(toSign, process.env.JWT_SEED, {
             expiresIn: '1h',
         });
 
         const resetLink = `https://gvdoral.bitfarm.mx/web/reset-password/${resetToken}`;
-        /*
-        const mailBody = emailTemplate(resetLink);
-
-        const response = await sendMail(
-            'zmendoza@bitfarm.com.mx',
-            null,
-            'Reset Password',
-            mailBody,
-        );
-
-        if (response?.rejected.length > 0) {
-            throw new EntityNotFoundError(i18n.__('email not sent'));
-        }
-        */
         return email;
     }
 
@@ -99,16 +85,16 @@ class UserService extends CRUDService {
             where.companyId = loggedUser.company.id;
         }
 
-        return  User.findOne({
+        return  user.findOne({
                 where,
                 include: [{
-                    model: Role,
+                    model: role,
                     through: { attributes: [] },
                     attributes: ['name'],
                     as: 'roles'
                 },
                 {
-                    model: Company,
+                    model: company,
                     attributes: ['id', 'name'],
                     as: 'company',
                 }
@@ -129,15 +115,15 @@ class UserService extends CRUDService {
 
     async changePassword(userId, newPassword) {
         const loggedUser = this.getLoggedUser();
-        const user = await User.findOne({userId, companyId: loggedUser.company.id});
-        if (!user) {
+        const u = await User.findOne({userId, companyId: loggedUser.company.id});
+        if (!u) {
             throw new entityErrors.EntityNotFoundError(
                 i18n.__('entity not found', 'Usuario'),
             );
         }
-        user.password = bcrypt.hashSync(newPassword, 10);
-        await user.save();
-        return this.toJson(user);
+        u.password = bcrypt.hashSync(newPassword, 10);
+        await u.save();
+        return this.toJson(u);
     }
 }
 

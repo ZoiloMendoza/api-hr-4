@@ -1,9 +1,9 @@
-const { Client } = models;
+const { client } = models;
 const { CRUDController } = helpers;
 
 class ClientController extends CRUDController {
     constructor() {
-        super(Client);
+        super(client);
     }
 }
 

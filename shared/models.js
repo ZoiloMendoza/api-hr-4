@@ -17,7 +17,7 @@ function readModels(dir) {
         logger.info(`Loading model: ${file}`);
         const model = require(path.join(dir, file))(sequelize.sequelize, sequelize.Sequelize.DataTypes);
         logger.info(path.join(dir, file));
-        db[model.name] = model; 
+        db[model.name.toLowerCase() ] = model; 
       });
       fs.readdirSync(dir).filter(file => {
         return fs.lstatSync(path.join(dir, file)).isDirectory();

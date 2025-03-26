@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Parameter.belongsTo(models.Company, {
+      Parameter.belongsTo(models.company, {
         foreignKey: 'companyId',
         as: 'company',
       });

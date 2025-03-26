@@ -1,8 +1,8 @@
 const { CRUDValidator }  = helpers;
-const { Role } = models;
+const { role } = models;
 
 class RoleValidator extends CRUDValidator {
     
 }
 
-module.exports = new RoleValidator(Role);
+module.exports = new RoleValidator(role);

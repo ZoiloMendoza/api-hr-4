@@ -1,7 +1,7 @@
 const SearchResult = require('./search-result');
 const CRUDParser = require('./crud-parser');
 const entityErrors = require('./entity-errors');
-const { Op } = require('sequelize');
+const { Op, Utils } = require('sequelize');
 const SequelizeValidator = require('./sequelizeValidator');
 
 const BaseController = require('./base-controller');
@@ -15,18 +15,16 @@ class CRUDController extends BaseController {
     constructor(model, role = null) {
         super();
         this.model = model;
-        this.modelName = model.getTableName().toLowerCase();
-        if (this.modelName.endsWith('s')) {
-            this.modelName = this.modelName.slice(0, -1);
-        }
+        this.modelName = model.name.toLowerCase();
+        
 
         this.service =
-            require('../services')[model.getTableName().toLowerCase() + 'Service'];
+            require('../services')[this.modelName + 'Service'];
         this.parser = new CRUDParser(model);
 
-        this.setValidator(require('../validators')[model.getTableName().toLowerCase()]);
+        this.setValidator(require('../validators')[this.modelName]);
         if (!role) {
-            role = model.getTableName().toUpperCase() + '_ADMON';
+            role = this.modelName.toUpperCase() + '_ADMON';
         } else {
             role = process.env.SYSADMIN_ROLE;
         }
@@ -39,16 +37,16 @@ class CRUDController extends BaseController {
     addRelation(OtherModel, fields) {
         //create validator for fields
         const relation = this.service.addRelation(OtherModel, fields);
-
+        const otherModelName = Utils.pluralize(OtherModel.name.toLowerCase());
         let multiple = (relation.associationType === 'BelongsToMany') || (relation.associationType === 'HasMany');
         let validator = new SequelizeValidator(OtherModel, fields, multiple);
-        this.validateRoute('put', `/${this.modelName}/:id/${OtherModel.getTableName()}`, validator.genValidator());
-        this.validateRoute('delete', `/${this.modelName}/:id/${OtherModel.getTableName()}`, validator.genValidator());
-        this.addRoute('put', `/${this.modelName}/:id/${OtherModel.getTableName()}`, async (req, res) => {
-            logger.info(`Adding ${OtherModel.getTableName() } to ${this.modelName} ${req.params.id}`);
+        this.validateRoute('put', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
+        this.validateRoute('delete', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
+        this.addRoute('put', `/${this.modelName}/:id/${otherModelName}`, async (req, res) => {
+            logger.info(`Adding ${otherModelName } to ${this.modelName} ${req.params.id}`);
             const id = req.params.id;
             try {
-                const elem = await this.service[`assign${OtherModel.getTableName()}`](id, req.input);
+                const elem = await this.service[`assign${otherModelName}`](id, req.input);
                 return res.json(elem);
             } catch (error) {
                 if (error instanceof entityErrors.EntityNotFoundError) {
@@ -60,11 +58,11 @@ class CRUDController extends BaseController {
                 return res.status(500).json([error.message]);
             }
         });
-        this.addRoute('delete', `/${this.modelName}/:id/${OtherModel.getTableName()}`, async (req, res) => {
-            logger.info(`Deleting ${OtherModel.getTableName()} from ${this.modelName} ${req.params.id}`);
+        this.addRoute('delete', `/${this.modelName}/:id/${otherModelName}`, async (req, res) => {
+            logger.info(`Deleting ${otherModelName} from ${this.modelName} ${req.params.id}`);
             const id = req.params.id;
             try {
-                const elem = await this.service[`remove${OtherModel.getTableName()}`](id, req.input);
+                const elem = await this.service[`remove${otherModelName}`](id, req.input);
                 return res.json(elem);
             } catch (error) {
                 res.status(500).json([error.message]);

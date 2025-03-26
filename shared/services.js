@@ -21,6 +21,7 @@ scandDir = (dir) => {
                 ) {                
                     logger.info(`Loading service file: ${file}`);
                     const service = require(path.join(dir, file));
+                    //console.log(service)
                     if (service && service.name) {
                         if (db[service.name + "Service"]) {
                             throw new Error(`Service ${service.name} already loaded`);
