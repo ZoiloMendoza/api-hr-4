@@ -72,12 +72,12 @@ class ModelHelper {
               if (basicType) {
                 logger.trace(`Adding edge from ${model.name.toLowerCase()} to ${basicType} with name ${attrName}`);  
                 
-                if ((!model.isExcluded) || (!model.isExcluded(attrName))) {
+                //if ((!model.isExcluded) || (!model.isExcluded(attrName))) {
                   if (!this.typesVector[basicType][model.name.toLowerCase()]) {
                     this.typesVector[basicType][model.name.toLowerCase()] = [];
                   }
                   this.typesVector[basicType][model.name.toLowerCase()].push({name: attrName, json: false, basic: true});
-                }
+                //}
                 edges.push({
                   from: model.name.toLowerCase(),
                   to: basicType,
@@ -118,14 +118,14 @@ class ModelHelper {
                   break;
               }
               logger.trace(`Adding edge from ${model.name.toLowerCase()} to ${targetName} with name ${assocName} (multiple: ${fromMultiple})`);
-              if ((!model.isExcluded) || (!model.isExcluded(assocName))) {
+              //if ((!model.isExcluded) || (!model.isExcluded(assocName))) {
                 this.basicTypes.forEach((bType)=>{
                   if (!this.typesVector[bType][model.name.toLowerCase()]) {
                     this.typesVector[bType][model.name.toLowerCase()] = [];
                   }
                   this.typesVector[bType][model.name.toLowerCase()].push({name: assocName, basic: false, json:false, target: targetName});
                 });
-              }
+              //}
               edges.push({
                 from: model.name.toLowerCase(),
                 to: targetName,
@@ -137,14 +137,14 @@ class ModelHelper {
           for (let attr of this.jsonTypes) {
             const targetName = attr.type.model.name.toLowerCase()
             logger.trace(`Adding edge from ${model.name.toLowerCase()} to JSON  ${targetName} with name ${attr.field}`);
-            if ((!model.isExcluded) || (!model.isExcluded(attr.field))) {
+            //if ((!model.isExcluded) || (!model.isExcluded(attr.field))) {
               this.basicTypes.forEach((bType)=>{
                 if (!this.typesVector[bType][model.name.toLowerCase()]) {
                   this.typesVector[bType][model.name.toLowerCase()] = [];
                 }
                 this.typesVector[bType][model.name.toLowerCase()].push({name: attr.field, basic: false, json: true, target: targetName });
               });
-            }
+            //}
             edges.push({
               from: model.name.toLowerCase(),
               to: targetName,

@@ -100,6 +100,8 @@ class CRUDService extends BaseService {
             f = options.filter;
         }
         let translation = translateAST(f, this.model);
+        
+
         options.where = translation.where;
 
         //Inject company condition

@@ -83,7 +83,6 @@ class CRUDController extends BaseController {
             if (q.start<0 || q.limit<=0) {
                 return res.status(400).json();
             }
-
             try {
                 const items = await this.service.findAndCountAll({
                     offset: q.start,
@@ -91,7 +90,6 @@ class CRUDController extends BaseController {
                     filter: q.filter,
                     order: [[q.orderBy, q.order]],
                 });
-
                 return res.json(new SearchResult(items.rows, q.start + 1, q.limit, items.count));
             } catch (error) {
                 return this.throwError(error, req, res);

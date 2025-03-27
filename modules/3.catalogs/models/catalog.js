@@ -15,13 +15,19 @@ module.exports = (sequelize, DataTypes) => {
     }
     Catalog.init(
         {
-            name: DataTypes.STRING,
+            name: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
             value: {
                 type: DataTypes.DECIMAL(10, 2),
                 defaultValue: 0,
             },
             description: DataTypes.STRING,
-            type: DataTypes.STRING,
+            type: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
             companyId: {
                 type: DataTypes.INTEGER,
                 allowNull: false,

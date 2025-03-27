@@ -263,10 +263,10 @@ const fields = {};
         this.model = model;
         this.columnsToRemove =  new Set(['updatedAt', 'createdAt', 'active'].concat(filterCols));
         //console.log(typesVector)
-        const grammar = this.genGrammar();
+        this.grammar = this.genGrammar();
         //console.log(grammar )
         // Compile the grammar
-        this.parser = peggy.generate(grammar);
+        this.parser = peggy.generate(this.grammar);
         logger.info("Parser initialized for model " + this.model.name.toLowerCase());
     }
 
@@ -279,10 +279,16 @@ const fields = {};
         sq: q.q || '',
         filter: { },
       };
+      if (isActive) {
+        if (query.sq != "") {
+          query.sq = query.sq + " AND active=true";
+        } else {
+          query.sq = "active=true";
+        }
+      }
       if (query.sq != "") {
         query.filter = this.parser.parse(query.sq);
-      }
-      query.filter.active = {value: isActive, type: "Boolean"};
+      } 
       return query;
     }
 }

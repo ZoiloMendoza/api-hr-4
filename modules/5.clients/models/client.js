@@ -1,4 +1,5 @@
 const {CrudJsonType} = helpers;
+const Joi = require('joi');
 
 module.exports = (sequelize, DataTypes) => {
     class Client extends helpers.CRUDModel {
@@ -18,27 +19,32 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
     }
-    const Address = require('./address')(sequelize, DataTypes);
 
     Client.init(
         {
-            name: DataTypes.STRING,
+            name: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
             companyId: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
             addresses: {
-                type: new CrudJsonType(Address, true),
+                type: new CrudJsonType(models.address, true),
                 validate: {
                     isValidAddressesArray(value) {
-                        const validator = Address.getValidator();
-                        const { error } = validator.schema.validate(value, { abortEarly: false });
+                        console.log(value)
+                        const validatorSchema = Joi.array().items(validators.address.schema);
+
+                        const { error } = validatorSchema.validate(value, { abortEarly: false });
                         if (error) {
                           throw new Error(`Address validation failed: ${error.message}`);
                         }
                 
                      }
-                }
+                },
+                defaultValue: []
             },            
             active: {
                 type: DataTypes.BOOLEAN,

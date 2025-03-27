@@ -11,6 +11,7 @@ module.exports = {
             },
             name: {
                 type: Sequelize.STRING,
+                allowNull: false,
             },
             value: {
                 type: Sequelize.DECIMAL(10, 2),
@@ -21,6 +22,7 @@ module.exports = {
             },
             type: {
                 type: Sequelize.STRING,
+                allowNull: false,
             },
             active: {
                 type: Sequelize.BOOLEAN,
@@ -30,12 +32,12 @@ module.exports = {
             companyId: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
-		references: {
-          		model: 'Companies',
-          		key: 'id',
-        	},
-        	onUpdate: 'CASCADE',
-        	onDelete: 'CASCADE',
+                references: {
+                    model: 'Companies',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+        	    onDelete: 'CASCADE',
             },
             createdAt: {
                 allowNull: false,

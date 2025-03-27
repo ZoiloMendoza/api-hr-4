@@ -139,10 +139,8 @@ function generateObjectRule(joiSchema) {
                   });
                   break;
               case "JSON_CRUD":
-                  //chanhe me
-                  joiSchema = Joi.string().messages({
-                      'string.base': i18n.__('error.validation.string', field),
-                  });
+                  // delegate to custom validator
+                  joiSchema = Joi.any();
                   break;
               case DataTypes.VIRTUAL.key:
                   // Virtual fields should not be sent!

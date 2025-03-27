@@ -1,14 +1,14 @@
 const { BaseController, entityErrors } = helpers;
 const JWT = require('jsonwebtoken');
 
-const {usersService} = services;
+const {userService} = services;
 
 class LoginController extends BaseController{
 
 	login = async (req, res) => {
 		let body = req.input;
 		try {
-			const user = await usersService.getUserByUsernameAndPassword(body.username, body.password, false);
+			const user = await userService.getUserByUsernameAndPassword(body.username, body.password, false);
 			if (!user) {
 					return res.status(401).json([req.__("entity not found", "Usuario")]);
 			}
@@ -30,7 +30,7 @@ class LoginController extends BaseController{
 	requestPasswordReset = async (req, res) => {
         const { email } = req.input;
         try {
-            const sendEmail = await usersService.requestPasswordReset(email);
+            const sendEmail = await userService.requestPasswordReset(email);
             res.json(sendEmail);
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {

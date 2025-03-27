@@ -11,6 +11,7 @@ module.exports = {
             },
             name: {
                 type: Sequelize.STRING,
+                allowNull: false,
             },
             active: {
                 type: Sequelize.BOOLEAN,
@@ -26,6 +27,19 @@ module.exports = {
                 },
         	onUpdate: 'CASCADE',
         	onDelete: 'CASCADE',
+            },
+            addresses: {
+                type: Sequelize.JSON,
+                validate: {
+                    isValidAddressesArray(value) {
+                        const validator = validators.addres;
+                        const { error } = validator.schema.validate(value, { abortEarly: false });
+                        if (error) {
+                          throw new Error(`Address validation failed: ${error.message}`);
+                        }
+                    },
+                },
+                defaultValue: [],
             },
             createdAt: {
                 allowNull: false,

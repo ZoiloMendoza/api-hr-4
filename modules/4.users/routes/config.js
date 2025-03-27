@@ -1,7 +1,7 @@
 const { BaseController } = helpers;
 const { user } = models;
 const validator = require('../validators/firstconfig');
-const {  companiesService, usersService } = services;
+const {  companyService, userService } = services;
 
 class ConfigController extends BaseController{
     constructor(){
@@ -25,14 +25,14 @@ class ConfigController extends BaseController{
     firstconfig = async (req, res) => {
         logger.info("First configuration");
         let company = null;
-        let user = null;
+        let u = null;
         try {
-            company = await companiesService.createFirstCompany(req.input.company );
-            user = await usersService.createFirstUser(company.id, req.input.username);
+            company = await companyService.createFirstCompany(req.input.company );
+            u = await userService.createFirstUser(company.id, req.input.username);
         } catch (error) {
             return res.status(500).json([req.__('generic error', error.toString())]);
         }
-        return res.status(200).json(user);
+        return res.status(200).json(u);
     }
 
     notfirstconfig = async (req, res) => {

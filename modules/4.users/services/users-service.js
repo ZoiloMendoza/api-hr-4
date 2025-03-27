@@ -24,8 +24,8 @@ class UserService extends CRUDService {
         return password;
     }    
 
-    toJson(user) {
-        const json = super.toJson(user);
+    toJson(u) {
+        const json = super.toJson(u);
         delete json.password;
         return json;
     }
@@ -37,22 +37,22 @@ class UserService extends CRUDService {
             throw new error(i18n.__('entity already exists', 'Usuario'));
         }
         const password = this.generatePassword();
-        const user = {
+        const u = {
             username: username,
             password: bcrypt.hashSync(password, 10),
             companyId: companyId,
             fullname: username,
             active: true,
         };
-        const u = await user.create(user);
-        const roles = await Role.findAll    ({
+        const uDb = await user.create(u);
+        const roles = await role.findAll    ({
             where: { name: { 
                 [Op.in]: [process.env.COMPANYADMIN_ROLE, process.env.SYSADMIN_ROLE] 
             }},
         });
         logger.info(`Roles: ${roles}`);
-        await u.addRoles(roles);    
-        return {user: this.toJson(u), password: password};
+        await uDb.addRoles(roles);    
+        return {user: this.toJson(uDb), password: password};
     }
 
     async createUser(u) {

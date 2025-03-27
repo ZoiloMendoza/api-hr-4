@@ -340,6 +340,7 @@ function translateAST(ast, baseModel) {
       const operand = walk(node.left);
       return { target: operand.target, clause: { [Op.not]: operand.clause } };
     }
+    console.log(node);
     throw new Error(`Unknown node type: ${node.type}`);
   }
 
