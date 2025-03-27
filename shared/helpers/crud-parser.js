@@ -227,9 +227,16 @@ const fields = {};
             if (tvect[bType][m.name.toLowerCase()]) {
               for (let mType of tvect[bType][m.name.toLowerCase()]) {
                 if (mType.basic) {
-                  fields[m.name.toLowerCase() + bType].push(`"${mType.name}" { return  {"type": "field", value: "${mType.name}", "path": "/"}; }`)
+                  logger.trace(`"${mType.name}" { return  {"type": "field", json: false, value: "${mType.name}", "path": "/"}; }`  );
+                  fields[m.name.toLowerCase() + bType].push(`"${mType.name}" { return  {"type": "field", json: false, value: "${mType.name}", "path": "/"}; }`)
                 } else {
-                  fields[m.name.toLowerCase() + bType].push(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: f.value, "path": "/${mType.target}" + f.path}; }`);
+                  if (mType.json) {
+                    logger.trace(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: "${mType.target}." + f.value, json: true, "path": "/" + f.path}; }`)
+                    fields[m.name.toLowerCase() + bType].push(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", json:true, value: "${mType.target}." + f.value, "path": "/" + f.path}; }`);
+                  } else {
+                    logger.trace(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: f.value, json: false, "path": "/${mType.target}" + f.path}; }`) 
+                    fields[m.name.toLowerCase() + bType].push(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", json: false, value: f.value, "path": "/${mType.target}" + f.path}; }`);
+                  }
                 } 
               }
             } else {

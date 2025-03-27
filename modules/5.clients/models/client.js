@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
     const Address = require('./address')(sequelize, DataTypes);
+
     Client.init(
         {
             name: DataTypes.STRING,
@@ -30,7 +31,8 @@ module.exports = (sequelize, DataTypes) => {
                 type: new CrudJsonType(Address, true),
                 validate: {
                     isValidAddressesArray(value) {
-                        const { error } = this.validator.schema.validate(value, { abortEarly: false });
+                        const validator = Address.getValidator();
+                        const { error } = validator.schema.validate(value, { abortEarly: false });
                         if (error) {
                           throw new Error(`Address validation failed: ${error.message}`);
                         }

@@ -1,9 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 
-const db = {};
-
-
 scandDir = (dir) => {
     if (!fs.existsSync(dir)) {
         return;
@@ -21,12 +18,12 @@ scandDir = (dir) => {
                     //const vName = file.substring(0, file.lastIndexOf('.'));   
                     const validator = require(path.join(dir, file));
                     if (validator && validator.name) {
-                        if (db[validator.name]) {
+                        if (validators[validator.name]) {
                             throw new Error(`Validator ${validator.name} already loaded`);
                         }
                         logger.info(`Loading validator: ${validator.name}`);
                     
-                        db[validator.name] = validator;
+                        validators[validator.name] = validator;
                         logger.info(`Validator ${validator.name} loaded`);
                     }
                 }
@@ -34,15 +31,12 @@ scandDir = (dir) => {
     });
 }
 
-Object.keys(modules).forEach(moduleName => {
-    const module = modules[moduleName];
+for (const [moduleName, mod] of modules) {
     logger.info(`Loading validators for module ${moduleName}`);
-    scandDir(path.join(__dirname, '..', 'modules', moduleName, 'validators'));
-});
+    scandDir(path.join(mod.basePath, 'validators'));
+};
 
 if (fs.existsSync(path.join(__dirname, '..', 'server', 'validators'))) {
     logger.info('Loading project validators');
     scandDir(path.join(__dirname, '..', 'server', 'validators'));
 }
-
-module.exports = db;

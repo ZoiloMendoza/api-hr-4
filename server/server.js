@@ -1,6 +1,4 @@
-require("dotenv").config();
-global.logger = require("../shared/helpers/logger");
-global.i18n = require("../shared/middleware/i18n");
+const init = require('../shared/init');
 
 const util = require('util')
 
@@ -9,14 +7,6 @@ const fs = require("fs");
 const { Umzug, SequelizeStorage } = require('umzug');
 const config = require("./config/vault-config");
 
-const DEBUG=true;
-
-if (!DEBUG) {
-  console.log = function(...args) {
-    logger.error("console.log should be replaced with logger methods");
-    logger.info("args were: " +  args.join(" "));
-  };
-}
 
 async function runMigrations() {
   // Set up Umzug to run migrations programmatically
@@ -95,13 +85,8 @@ function loadRoutes(app, folder) {
 (async () => {
   try {
     await config.config();
+    await init();
     logger.level = process.env.LOG_LEVEL || "info";
-    global.helpers = require("../shared/helpers");
-    global.modules =  require("../modules/");;
-    
-    global.models = require("../shared/models");
-    global.services = require("../shared/services");
-    global.validators = require("../shared/validators");
         
     await runMigrations();
     
@@ -130,52 +115,19 @@ function loadRoutes(app, folder) {
     app.use(tokenVerify);
     app.use(storeUserMiddleware); 
 
-    Object.keys(modules).forEach((moduleName) => {
+    for (const [moduleName, mod] of modules) {
        logger.info(`Loading controllers for module ${moduleName}`);
-       const module = modules[moduleName];
-       const moduleRoutes = path.join(__dirname, '../', 'modules', moduleName , 'routes');
+       const moduleRoutes = path.join(mod.basePath , 'routes');
        if (fs.existsSync(moduleRoutes)) {
-          module.loadControllers(moduleRoutes);
-          module.controllers.forEach((controller) => {
+          mod.module.loadControllers(moduleRoutes);
+          mod.module.controllers.forEach((controller) => {
             app.use(controller);
           });
        }
-    });
+    };
     loadRoutes(app, path.join(__dirname, 'routes'));
     server.listen(process.env.PORT, async () => {
-      logger.info(i18n.__("Listening to Port", process.env.PORT));
-      //let g = await helpers.modelsGraph.buildGraph(models);
-      // Assuming "graph" is your graphlib Graph instance:
-    //const bfsOrder = helpers.modelsGraph.bfs(g, "Users");
-    //console.log(g); 
-    
-    /*
-    let nodes = [];
-    helpers.modelsGraph.bfs('Users', (n)=> {
-      nodes.push(n)
-    });
-    console.log(nodes)  
-  */
- 
-      /*
-    const fs = require('fs');
-    const peggy = require('peggy');
-    // Read the grammar file
-    const grammar = fs.readFileSync('test.peg', 'utf8');
-    
-    // Generate a parser from the grammar
-    const parser = peggy.generate(grammar);
-      
-    const input = '(username ~ "aurpi") & (Roles.name = "admin" || username)';
-    const result = parser.parse(input);
-    const { sequelizeQuery } = helpers;
-
-    const q = sequelizeQuery.translateAST(result, models.User);
-    console.log(util.inspect(q,false, null, true))  ;  
-      models.User.findAll(q).then((users) => {
-        console.log(users);
-      });
-      */
+    logger.info(i18n.__("Listening to Port", process.env.PORT));
     });
   } catch (error) {
     logger.error(`Error starting server: ${error}`);

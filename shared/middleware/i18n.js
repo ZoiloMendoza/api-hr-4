@@ -36,7 +36,6 @@ fs.readdirSync(path.join(__dirname, '../../', 'modules')).forEach(moduleName => 
   const moduleTranslations = path.join(__dirname, '../../', 'modules', moduleName, 'locales');
   if (fs.existsSync(moduleTranslations)) {
     fs.readdirSync(moduleTranslations).forEach(file => {
-      //  logger.info(`Loading translations file ${file} for module ${moduleName}`);
       if (file.endsWith('.json')) {
         const lang = file.replace('.json', '');
         const filePath = path.join(moduleTranslations, file);

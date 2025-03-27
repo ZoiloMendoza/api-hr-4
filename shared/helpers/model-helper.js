@@ -76,7 +76,7 @@ class ModelHelper {
                   if (!this.typesVector[basicType][model.name.toLowerCase()]) {
                     this.typesVector[basicType][model.name.toLowerCase()] = [];
                   }
-                  this.typesVector[basicType][model.name.toLowerCase()].push({name: attrName, basic: true});
+                  this.typesVector[basicType][model.name.toLowerCase()].push({name: attrName, json: false, basic: true});
                 }
                 edges.push({
                   from: model.name.toLowerCase(),
@@ -123,7 +123,7 @@ class ModelHelper {
                   if (!this.typesVector[bType][model.name.toLowerCase()]) {
                     this.typesVector[bType][model.name.toLowerCase()] = [];
                   }
-                  this.typesVector[bType][model.name.toLowerCase()].push({name: assocName, basic: false, target: targetName});
+                  this.typesVector[bType][model.name.toLowerCase()].push({name: assocName, basic: false, json:false, target: targetName});
                 });
               }
               edges.push({
@@ -142,7 +142,7 @@ class ModelHelper {
                 if (!this.typesVector[bType][model.name.toLowerCase()]) {
                   this.typesVector[bType][model.name.toLowerCase()] = [];
                 }
-                this.typesVector[bType][model.name.toLowerCase()].push({name: attr.field, basic: false, target: targetName });
+                this.typesVector[bType][model.name.toLowerCase()].push({name: attr.field, basic: false, json: true, target: targetName });
               });
             }
             edges.push({

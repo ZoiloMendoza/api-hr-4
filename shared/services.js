@@ -1,8 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 
-const db = {};
-
 // Function to scan directories for service files
 scandDir = (dir) => {
     if (!fs.existsSync(dir)) {
@@ -23,36 +21,28 @@ scandDir = (dir) => {
                     const service = require(path.join(dir, file));
                     //console.log(service)
                     if (service && service.name) {
-                        if (db[service.name + "Service"]) {
+                        if (services[service.name + "Service"]) {
                             throw new Error(`Service ${service.name} already loaded`);
                         }                    
-                        db[service.name + "Service"] = service;
+                        services[service.name + "Service"] = service;
                         logger.info(`Service ${service.name}Service loaded`);
                     }
                 }
             }
     });
 }
+if (!services) {
+    logger.info('Initializing services');
+    global.services = {};
+}
 
 // Load services using file scan
-Object.keys(modules).forEach(moduleName => {
-    const module = modules[moduleName];
+for (const [moduleName, mod] of modules) {
     logger.info(`Loading services for module ${moduleName}`);
-    scandDir(path.join(__dirname, '..', 'modules', moduleName, 'services'));
-});
+    scandDir(path.join(mod.basePath, 'services'));
+};
 
 if (fs.existsSync(path.join(__dirname, '..', 'server', 'services'))) {
     logger.info('Loading project services');
     scandDir(path.join(__dirname, '..', 'server', 'services'));
 }
-
-// Allow modules to explicitly export services (for virtual/computed services)
-Object.keys(modules).forEach(moduleName => {
-    const module = modules[moduleName];
-    if (typeof module.exportServices === 'function') {
-        logger.info(`Exporting services for module ${moduleName}`);
-        module.exportServices(db);
-    }
-});
-
-module.exports = db;

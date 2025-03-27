@@ -3,9 +3,6 @@ const JWT = require('jsonwebtoken');
 
 const {usersService} = services;
 
-const validator = require('../validators/login');
-
-
 class LoginController extends BaseController{
 
 	login = async (req, res) => {
@@ -48,7 +45,7 @@ class LoginController extends BaseController{
 	constructor(){
 		super();
 		this.neededROLE = false;
-		this.setValidator(validator);
+		this.setValidator(validators['login']);
 		this.addRoute("post", "/login", this.login);
 		this.addRoute(
             'post',

@@ -1,7 +1,7 @@
 const SearchResult = require('./search-result');
 const CRUDParser = require('./crud-parser');
 const entityErrors = require('./entity-errors');
-const { Op, Utils } = require('sequelize');
+const { Utils } = require('sequelize');
 const SequelizeValidator = require('./sequelizeValidator');
 
 const BaseController = require('./base-controller');
@@ -18,11 +18,10 @@ class CRUDController extends BaseController {
         this.modelName = model.name.toLowerCase();
         
 
-        this.service =
-            require('../services')[this.modelName + 'Service'];
+        this.service = services[this.modelName + 'Service'];
         this.parser = new CRUDParser(model);
 
-        this.setValidator(require('../validators')[this.modelName]);
+        this.setValidator(validators[this.modelName]);
         if (!role) {
             role = this.modelName.toUpperCase() + '_ADMON';
         } else {
@@ -72,32 +71,14 @@ class CRUDController extends BaseController {
     }
 
     addGet() {
-        this.addRoute('get', `/${this.modelName}s`, async (req, res) => {
-            logger.info(`Querying ${this.modelName}s`);
+        this.addRoute('get', `/${Utils.pluralize(this.modelName)}`, async (req, res) => {
+            logger.info(`Querying ${Utils.pluralize(this.modelName)}`);
             let q = null;
             try {
                 q = this.parser.parse(req.query);
             } catch (error) {
                 return res.status(400).json(req.__('Invalid query'));
             }
-            //console.log(q);
-            /*
-            const where = {};
-            for (const key in q.filter) {
-                if (q.filter.hasOwnProperty(key)) {
-                    if ((q.filter[key].type === 'String')
-                        || (q.filter[key].type === 'Number')
-                        || (q.filter[key].type === 'Decimal')) {
-                        where[key] = {
-                            [Op.like]: '%' + q.filter[key].value + '%'
-                        };
-                    } else {
-                        where[key] = {
-                          [Op.eq]: q.filter[key].value
-                        }
-                    }
-                }
-            }*/
 
             if (q.start<0 || q.limit<=0) {
                 return res.status(400).json();

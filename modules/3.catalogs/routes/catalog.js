@@ -1,5 +1,4 @@
 const { BaseController, SearchResult, CRUDParser, entityErrors } = helpers;
-const validator = require('../validators/catalog');
 const {catalogService} = services;
 const { catalog } = models;
 
@@ -7,7 +6,7 @@ class CatalogController extends BaseController {
     constructor() {
         super();
         this.neededROLE = false;
-        this.setValidator(validator);
+        this.setValidator(validators['catalog']);
         this.initializeRoutes();
         this.parser = new CRUDParser(catalog);
     }

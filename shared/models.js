@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 const { sequelize } = helpers;
-const db = {};
 
 function readModels(dir) {
     fs.readdirSync(dir).filter(file => {
@@ -16,8 +15,8 @@ function readModels(dir) {
       .forEach(file => {
         logger.info(`Loading model: ${file}`);
         const model = require(path.join(dir, file))(sequelize.sequelize, sequelize.Sequelize.DataTypes);
-        logger.info(path.join(dir, file));
-        db[model.name.toLowerCase() ] = model; 
+        logger.trace(path.join(dir, file));
+        models[model.name.toLowerCase() ] = model; 
       });
       fs.readdirSync(dir).filter(file => {
         return fs.lstatSync(path.join(dir, file)).isDirectory();
@@ -27,15 +26,19 @@ function readModels(dir) {
       });
 }
 
-// Load models from module directories
-Object.keys(modules).forEach(moduleName => {
-    const modelsDir = path.join(__dirname, '..', 'modules', moduleName, 'models');
+if (!models) {
+    logger.info('Initializing models'); 
+    global.models = {};
+}
 
+// Load models from module directories
+for (const [moduleName, mod] of modules) {  
+    const modelsDir = path.join(mod.basePath, 'models');
     if (fs.existsSync(modelsDir)) {
         logger.info(`Loading models for module ${moduleName}`);
         readModels(modelsDir);
     }
-});
+};
 
 // Load server models
 if (fs.existsSync(path.join(__dirname, '..', 'server', 'models'))) {
@@ -44,22 +47,13 @@ if (fs.existsSync(path.join(__dirname, '..', 'server', 'models'))) {
 }
 
 // Set up model associations
-Object.keys(db).forEach(modelName => {
-    if (db[modelName].associate) {
-      db[modelName].associate(db);
+Object.keys(models).forEach(modelName => {
+    if (models[modelName].associate) {
+      models[modelName].associate(models);
     }
 });
 
-// Allow modules to register virtual models
-Object.keys(modules).forEach(moduleName => {
-    const module = modules[moduleName];
-    if (typeof module.exportModels === 'function') {
-        logger.info(`Exporting virtual models for module ${moduleName}`);
-        module.exportModels(db);
-    }
-});
 
-db.sequelize = sequelize.sequelize;
-db.Sequelize = sequelize.Sequelize;
+models.sequelize = sequelize.sequelize;
+models.Sequelize = sequelize.Sequelize;
   
-module.exports = db;

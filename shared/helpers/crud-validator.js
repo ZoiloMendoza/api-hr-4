@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const BaseValidator = require('./base-validator');
 const { mapSequelizeTypeToJoi} = require('./joyutils');
+const { Utils } = require('sequelize');
 
 const noValidate = ['id', 'active', 'companyId', 'createdAt', 'updatedAt'];
 
@@ -18,7 +19,7 @@ class CRUDValidator extends BaseValidator {
         this.routes.post[`/${this.modelName}`] = this.genValidator();
         this.routes.put[`/${this.modelName}/:id`] = this.genValidator();
         this.routes.get[`/${this.modelName}/:id`] = false;
-        this.routes.get[`/${this.modelName}s`] = false;
+        this.routes.get[`/${Utils.pluralize(this.modelName)}`] = false;
         this.routes.delete[`/${this.modelName}/:id`] = false;
     }
 
