@@ -23,7 +23,22 @@ class CRUDValidator extends BaseValidator {
         this.routes.delete[`/${this.modelName}/:id`] = false;
     }
 
-    
+    addFieldValidation(field, validation) {
+        const schemaDescription = this.schema.describe();
+
+        // Check if field exists in the schema
+        const hasField = schemaDescription.keys && field in schemaDescription.keys;
+        // Extract the existing schema for the field
+        this.schema = hasField 
+        ? this.schema.keys({
+            [field]: this.schema.extract(field)
+                .concat(validation)
+          })
+        : this.schema.keys({
+            [field]: validation
+          });
+    }
+
     generateSchema() {
         const joiSchema = {};
         logger.info(

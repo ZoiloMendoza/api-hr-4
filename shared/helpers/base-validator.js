@@ -34,9 +34,10 @@ class BaseValidator {
     this.routes[method][path] = this.genValidator(schema);
   }
 
-    genValidator(schema = this.schema) {
+    genValidator(schema = null) {
     return async (req, res, next) => {
-      const { error, value } = schema.validate(req.body, {
+      const sc = schema || this.schema;
+      const { error, value } = sc.validate(req.body, {
         abortEarly: false,
       });
 

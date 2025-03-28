@@ -15,7 +15,7 @@ function addLocaleFile(locale, file) {
   // load file
   let localeFile = fs.readFileSync(file);
   let newLocale = JSON.parse(localeFile);
-
+  
   // merge existing with new locales
   catalog[locale] = catalog[locale] ? {...catalog[locale], ...newLocale } : newLocale;
 };
@@ -30,19 +30,27 @@ i18n.configure({
   updateFiles: false,
   syncFiles: true,
 });
-fs.readdirSync(path.join(__dirname, '../../', 'modules')).forEach(moduleName => {
-  if (fs.lstatSync(path.join(__dirname, '../../', 'modules', moduleName)).isDirectory()) {
-    logger.info(`Loading translations for module ${moduleName}`);
-  const moduleTranslations = path.join(__dirname, '../../', 'modules', moduleName, 'locales');
-  if (fs.existsSync(moduleTranslations)) {
-    fs.readdirSync(moduleTranslations).forEach(file => {
+
+function loadLocales(dir) {
+  if (fs.existsSync(dir)) {
+    logger.info(`Loading translations for module ${dir}`);
+    fs.readdirSync(dir).forEach(file => {
       if (file.endsWith('.json')) {
         const lang = file.replace('.json', '');
-        const filePath = path.join(moduleTranslations, file);
+        const filePath = path.join(dir, file);
         addLocaleFile(lang, filePath);
       }
     });
   }
+}
+
+
+console.log(path.join(__dirname, '..', 'locales'));
+loadLocales(path.join(__dirname, '..' , 'locales'));
+fs.readdirSync(path.join(__dirname, '../../', 'modules')).forEach(moduleName => {
+  if (fs.lstatSync(path.join(__dirname, '../../', 'modules', moduleName)).isDirectory()) {
+  const moduleTranslations = path.join(__dirname, '../../', 'modules', moduleName, 'locales');
+  loadLocales(moduleTranslations);
 }
   });
 

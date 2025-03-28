@@ -5,7 +5,6 @@ const Joi = require('joi');
 class CompanyValidator extends CRUDValidator {
     constructor() {
         super(company);
-
         const companySchemaPost = Joi.object({
             razonSocial: Joi.string()
                 .required()

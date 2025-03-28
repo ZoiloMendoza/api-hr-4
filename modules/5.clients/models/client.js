@@ -30,11 +30,13 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
+            rfc: {
+                type: DataTypes.STRING,
+            },
             addresses: {
                 type: new CrudJsonType(models.address, true),
                 validate: {
                     isValidAddressesArray(value) {
-                        console.log(value)
                         const validatorSchema = Joi.array().items(validators.address.schema);
 
                         const { error } = validatorSchema.validate(value, { abortEarly: false });

@@ -18,5 +18,6 @@ module.exports = {
     "sequelize": require('./sequelize'),
     "sequelizeQuery": require('./sequelize-query'),
     "modelsGraph": require('./model-helper'),
-    "CrudJsonType": require('./crud-jsonType')
+    "CrudJsonType": require('./crud-jsonType'),
+    "joyLibrary": require('./joi-library')
 };
