@@ -29,12 +29,12 @@ module.exports = {
             companyId: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
-		references: {
-          		model: 'Companies', // Name of the target table
-          		key: 'id', // Key in the target table that we're referencing
-        	},
-        	onUpdate: 'CASCADE',
-        	onDelete: 'CASCADE'
+                references: {
+                    model: 'Companies', // Name of the target table
+                    key: 'id', // Key in the target table that we're referencing
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             },
             createdAt: {
                 allowNull: false,
