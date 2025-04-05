@@ -1,5 +1,5 @@
 const { catalog } = models;
-const NodeCache = require('node-cache');    
+const NodeCache = require('node-cache');
 const { BaseService, entityErrors } = helpers;
 
 class CatalogService extends BaseService {
@@ -49,13 +49,14 @@ class CatalogService extends BaseService {
         catalogs = Object.keys(catalogs).map((c) => {
             return { type: c };
         });
-        if (filter.filter.type) {
-            catalogs = catalogs.filter((c) =>
-                c.type
-                    .toLowerCase()
-                    .includes(filter.filter.type.value.toLowerCase()),
-            );
-        }
+        // TODO: Revisar logica de filtros
+        // if (filter.filter.type) {
+        //     catalogs = catalogs.filter((c) =>
+        //         c.type
+        //             .toLowerCase()
+        //             .includes(filter.filter.type.value.toLowerCase()),
+        //     );
+        // }
         return catalogs;
     }
 
@@ -74,7 +75,9 @@ class CatalogService extends BaseService {
                 }
             }
         }
-        throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'valor'));
+        throw new entityErrors.EntityNotFoundError(
+            i18n.__('entity not found', 'valor'),
+        );
     }
 
     // List all elements of a catalog
@@ -87,11 +90,13 @@ class CatalogService extends BaseService {
         }
         let cat = catalogs[type];
         if (!cat) {
-            throw new entityErrors.EntityNotFoundError(i18n.__('cataolog not found', type));
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('cataolog not found', type),
+            );
         }
         let cols = ['id', 'name', 'description'];
         cols.forEach((col) => {
-            if (filter.cat[col]) {
+            if (filter.filter[col]) {
                 cat = catalog.filter((c) =>
                     c[col]
                         .toString()
@@ -109,7 +114,11 @@ class CatalogService extends BaseService {
         const currentUser = this.getLoggedUser();
         const cacheKey = `all-catalogs-${currentUser.company.id}`;
         type = this.checkValidCatalogType(type);
-        const cat = await catalog.create({ ...data, type, companyId: currentUser.company.id });
+        const cat = await catalog.create({
+            ...data,
+            type,
+            companyId: currentUser.company.id,
+        });
         this.cache.del(cacheKey);
         await this.loadCatalogs(currentUser.company.id);
         return {
@@ -124,13 +133,15 @@ class CatalogService extends BaseService {
         const currentUser = this.getLoggedUser();
         const cacheKey = `all-catalogs-${currentUser.company.id}`;
         data.companyId = currentUser.company.id;
-        
+
         type = this.checkValidCatalogType(type);
         const cat = await catalog.findOne({
             where: { id, type, active: true },
         });
         if (!cat) {
-            throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'valor'));
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('entity not found', 'valor'),
+            );
         }
 
         await cat.update(data);
@@ -147,13 +158,15 @@ class CatalogService extends BaseService {
     async deleteCatalog(type, id) {
         const currentUser = this.getLoggedUser();
         const cacheKey = `all-catalogs-${currentUser.company.id}`;
-        
+
         type = this.checkValidCatalogType(type);
         const cat = await catalog.findOne({
             where: { id, type, active: true },
         });
         if (!cat) {
-            throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'valor'));
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('entity not found', 'valor'),
+            );
         }
         cat.active = false;
         await cat.save();
@@ -165,6 +178,10 @@ class CatalogService extends BaseService {
             description: cat.description,
             type: cat.type,
         };
+    }
+
+    async test() {
+        return 'test';
     }
 }
 

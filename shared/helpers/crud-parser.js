@@ -2,40 +2,49 @@ const peggy = require('peggy'); // Assuming you have PEG.js installed
 const modelHelper = require('./model-helper');
 
 function getStringColumns(columnTypes) {
-    return Object.keys(columnTypes).filter(col => columnTypes[col] === 'STRING');
+    return Object.keys(columnTypes).filter(
+        (col) => columnTypes[col] === 'STRING',
+    );
 }
 
 function getNumberColumns(columnTypes) {
-    return Object.keys(columnTypes).filter(col => columnTypes[col] === 'INTEGER');
+    return Object.keys(columnTypes).filter(
+        (col) => columnTypes[col] === 'INTEGER',
+    );
 }
 
 function getDecimalColumns(columnTypes) {
-    return Object.keys(columnTypes).filter(col => columnTypes[col] === 'FLOAT' || columnTypes[col] === 'DECIMAL');
+    return Object.keys(columnTypes).filter(
+        (col) => columnTypes[col] === 'FLOAT' || columnTypes[col] === 'DECIMAL',
+    );
 }
 
 function getDateColumns(columnTypes) {
-    return Object.keys(columnTypes).filter(col => columnTypes[col] === 'DATE');
+    return Object.keys(columnTypes).filter(
+        (col) => columnTypes[col] === 'DATE',
+    );
 }
 
 function getJsonColumns(columnTypes) {
-  return Object.keys(columnTypes).filter(col => columnTypes[col] === 'JSON');
+    return Object.keys(columnTypes).filter(
+        (col) => columnTypes[col] === 'JSON',
+    );
 }
 
 function getBooleanColumns(columnTypes) {
-    return Object.keys(columnTypes).filter(col => columnTypes[col] === 'BOOLEAN');
+    return Object.keys(columnTypes).filter(
+        (col) => columnTypes[col] === 'BOOLEAN',
+    );
 }
-
-
 
 class CRUDParser {
     model = null;
     parser = null;
     genGrammar() {
-      logger.info("Generating grammar for model " + this.model.name);
-      const tvect = modelHelper.getTypesVector();
-      
+        logger.info('Generating grammar for model ' + this.model.name);
+        const tvect = modelHelper.getTypesVector();
 
-        let  grammar = `Clause
+        let grammar = `Clause
   = OrClause
 
 OrClause
@@ -214,82 +223,100 @@ _ "whitespace"
 
 `;
 
-const fields = {};
-      for (let bType of modelHelper.basicTypes) {
-        for(let o of Object.keys(models)) {
-          if (["sequelize","Sequelize"].includes(o)) {
-            continue;
-          }
-          const m = models[o];
-          if (m.name) {
-            logger.trace(m.name + " ->" + bType)
-            fields[m.name.toLowerCase() + bType] = [];
-            if (tvect[bType][m.name.toLowerCase()]) {
-              for (let mType of tvect[bType][m.name.toLowerCase()]) {
-                if (mType.basic) {
-                  logger.trace(`"${mType.name}" { return  {"type": "field", json: false, value: "${mType.name}", "path": "/"}; }`  );
-                  fields[m.name.toLowerCase() + bType].push(`"${mType.name}" { return  {"type": "field", json: false, value: "${mType.name}", "path": "/"}; }`)
-                } else {
-                  if (mType.json) {
-                    logger.trace(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: "${mType.target}." + f.value, json: true, "path": "/" + f.path}; }`)
-                    fields[m.name.toLowerCase() + bType].push(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", json:true, value: "${mType.target}." + f.value, "path": "/" + f.path}; }`);
-                  } else {
-                    logger.trace(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: f.value, json: false, "path": "/${mType.target}" + f.path}; }`) 
-                    fields[m.name.toLowerCase() + bType].push(`"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", json: false, value: f.value, "path": "/${mType.target}" + f.path}; }`);
-                  }
-                } 
-              }
-            } else {
-              logger.trace(`No fields for ${m.name.toLowerCase()}${bType}`);
-              fields[m.name.toLowerCase() + bType].push(`!("") { }`) 
+        const fields = {};
+        for (let bType of modelHelper.basicTypes) {
+            for (let o of Object.keys(models)) {
+                if (['sequelize', 'Sequelize'].includes(o)) {
+                    continue;
+                }
+                const m = models[o];
+                if (m.name) {
+                    logger.trace(m.name + ' ->' + bType);
+                    fields[m.name.toLowerCase() + bType] = [];
+                    if (tvect[bType][m.name.toLowerCase()]) {
+                        for (let mType of tvect[bType][m.name.toLowerCase()]) {
+                            if (mType.basic) {
+                                logger.trace(
+                                    `"${mType.name}" { return  {"type": "field", json: false, value: "${mType.name}", "path": "/"}; }`,
+                                );
+                                fields[m.name.toLowerCase() + bType].push(
+                                    `"${mType.name}" { return  {"type": "field", json: false, value: "${mType.name}", "path": "/"}; }`,
+                                );
+                            } else {
+                                if (mType.json) {
+                                    logger.trace(
+                                        `"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: "${mType.target}." + f.value, json: true, "path": "/" + f.path}; }`,
+                                    );
+                                    fields[m.name.toLowerCase() + bType].push(
+                                        `"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", json:true, value: "${mType.target}." + f.value, "path": "/" + f.path}; }`,
+                                    );
+                                } else {
+                                    logger.trace(
+                                        `"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", value: f.value, json: false, "path": "/${mType.target}" + f.path}; }`,
+                                    );
+                                    fields[m.name.toLowerCase() + bType].push(
+                                        `"${mType.name}." f:${mType.target}${bType}Field { return  {"type": "field", json: false, value: f.value, "path": "/${mType.target}" + f.path}; }`,
+                                    );
+                                }
+                            }
+                        }
+                    } else {
+                        logger.trace(
+                            `No fields for ${m.name.toLowerCase()}${bType}`,
+                        );
+                        fields[m.name.toLowerCase() + bType].push(`!("") { }`);
+                    }
+                }
             }
-          }
         }
-      }
 
-      for (let f of Object.keys(fields)) {
-        grammar += `${f}Field
-  = ${fields[f].join("\n  / ")}
+        for (let f of Object.keys(fields)) {
+            grammar += `${f}Field
+  = ${fields[f].join('\n  / ')}
 
-`
-      }
+`;
+        }
 
-      
-      //console.log(grammar)
+        //console.log(grammar)
         return grammar;
     }
 
     constructor(model, filterCols = []) {
         this.model = model;
-        this.columnsToRemove =  new Set(['updatedAt', 'createdAt', 'active'].concat(filterCols));
+        this.columnsToRemove = new Set(
+            ['updatedAt', 'createdAt', 'active'].concat(filterCols),
+        );
         //console.log(typesVector)
         this.grammar = this.genGrammar();
         //console.log(grammar )
         // Compile the grammar
         this.parser = peggy.generate(this.grammar);
-        logger.info("Parser initialized for model " + this.model.name.toLowerCase());
+        logger.info(
+            'Parser initialized for model ' + this.model.name.toLowerCase(),
+        );
     }
 
-    parse(q , isActive = true) {
-      const query = {
-        start: parseInt(q.start || 1) - 1,
-        limit: parseInt(q.limit || 100),
-        order: q.order || 'ASC',
-        orderBy: q.orderBy || 'id',
-        sq: q.q || '',
-        filter: { },
-      };
-      if (isActive) {
-        if (query.sq != "") {
-          query.sq = query.sq + " AND active=true";
-        } else {
-          query.sq = "active=true";
+    parse(q, isActive = true) {
+        const query = {
+            start: parseInt(q.start || 1) - 1,
+            limit: parseInt(q.limit || 100),
+            order: q.order || 'ASC',
+            orderBy: q.orderBy || 'id',
+            sq: q.q || '',
+            filter: {},
+        };
+
+        if (isActive) {
+            if (query.sq != '') {
+                query.sq = query.sq + ' AND active=true';
+            } else {
+                query.sq = 'active=true';
+            }
         }
-      }
-      if (query.sq != "") {
-        query.filter = this.parser.parse(query.sq);
-      } 
-      return query;
+        if (query.sq != '') {
+            query.filter = this.parser.parse(query.sq);
+        }
+        return query;
     }
 }
 
