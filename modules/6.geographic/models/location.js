@@ -1,18 +1,25 @@
 module.exports = (sequelize, DataTypes) => {
-    class Ubication extends helpers.CRUDModel {
+    class Location extends helpers.CRUDModel {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            // Define associations here
+            Location.hasMany(models.segment, {
+                foreignKey: 'origin',
+                as: 'originSegments',
+            });
+            Location.hasMany(models.segment, {
+                foreignKey: 'destination',
+                as: 'destinationSegments',
+            });
         }
     }
 
-    Ubication.init(
+    Location.init(
         {
-            directionN2: {
+            directionN3: {
                 type: DataTypes.STRING,
             },
             name: {
@@ -35,9 +42,9 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'Ubication',
+            modelName: 'Location',
         },
     );
 
-    return Ubication;
+    return Location;
 };
