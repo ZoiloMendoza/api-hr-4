@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         {
             routeName: {
                 type: DataTypes.STRING,
-                allowNull: false,
+                allowNull: true,
             },
             alias: {
                 type: DataTypes.STRING,
