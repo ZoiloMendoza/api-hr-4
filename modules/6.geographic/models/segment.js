@@ -27,6 +27,13 @@ module.exports = (sequelize, DataTypes) => {
                 otherKey: 'routeId',
                 as: 'routes',
             });
+
+            Segment.belongsToMany(models.location, {
+                through: 'SegmentLocation',
+                foreignKey: 'segmentId',
+                otherKey: 'locationId',
+                as: 'locations',
+            });
         }
     }
 

@@ -1,3 +1,5 @@
+const { CrudJsonType } = helpers;
+const Joi = require('joi');
 module.exports = (sequelize, DataTypes) => {
     class Location extends helpers.CRUDModel {
         /**
@@ -13,6 +15,12 @@ module.exports = (sequelize, DataTypes) => {
             Location.hasMany(models.segment, {
                 foreignKey: 'destination',
                 as: 'destinationSegments',
+            });
+            Location.belongsToMany(models.segment, {
+                through: 'SegmentLocation',
+                foreignKey: 'locationId',
+                otherKey: 'segmentId',
+                as: 'segments',
             });
         }
     }
@@ -34,6 +42,38 @@ module.exports = (sequelize, DataTypes) => {
             },
             lng: {
                 type: DataTypes.DECIMAL(11, 8),
+            },
+            routingLineId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            routingSourceId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            routingTargetId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            roadName: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            nearestPointGeoString: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            scale: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            type: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            value: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
             },
             active: {
                 type: DataTypes.BOOLEAN,
