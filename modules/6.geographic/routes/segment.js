@@ -4,6 +4,28 @@ const { CRUDController } = helpers;
 class SegmentsController extends CRUDController {
     constructor() {
         super(segment);
+        this.addRoute('post', '/calculate-segment', async (req, res) => {
+            logger.info('Calculando ruta');
+            try {
+                const {
+                    optimalRoute,
+                    tollRoute,
+                    freeRoute,
+                    originId,
+                    destinationId,
+                } = req.input;
+                const response = await this.service.calculateSegment(
+                    optimalRoute,
+                    tollRoute,
+                    freeRoute,
+                    originId,
+                    destinationId,
+                );
+                return res.json(response);
+            } catch (error) {
+                return res.status(500).json([error.message]);
+            }
+        });
     }
 }
 

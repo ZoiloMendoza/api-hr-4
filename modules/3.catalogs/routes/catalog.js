@@ -1,6 +1,6 @@
 const { BaseController, SearchResult, CRUDParser, entityErrors } = helpers;
 //const { catalogService } = services;
-const catalogService = require('../services/catalogs-service');
+const catalogService = require('../services/catalogs-service'); //DUDA: ¿por qué no se importa desde helpers?
 const { catalog } = models;
 
 class CatalogController extends BaseController {

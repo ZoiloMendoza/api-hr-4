@@ -1,6 +1,21 @@
 const { CRUDValidator } = helpers;
 const { segment } = models;
+const Joi = require('joi');
+class SegmentValidator extends CRUDValidator {
+    constructor() {
+        super(segment);
+        this.addSchema(
+            'post',
+            '/calculate-segment',
+            Joi.object({
+                optimalRoute: Joi.boolean().optional(),
+                tollRoute: Joi.boolean().optional(),
+                freeRoute: Joi.boolean().optional(),
+                originId: Joi.number().required(),
+                destinationId: Joi.number().required(),
+            }),
+        );
+    }
+}
 
-class SegmentValidator extends CRUDValidator {}
-
-module.exports = new SegmentValidator(segment);
+module.exports = new SegmentValidator();
