@@ -1,12 +1,11 @@
-const { route } = models;
+const { route, segment } = models;
 const { CRUDController } = helpers;
 
 class RoutesController extends CRUDController {
     constructor() {
         super(route);
+        this.addRelation(segment, ['id']);
     }
 }
 
-const myself = new RoutesController();
-
-module.exports = myself.getApp();
+module.exports = new RoutesController();

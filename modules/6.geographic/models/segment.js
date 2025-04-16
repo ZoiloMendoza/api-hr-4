@@ -42,6 +42,7 @@ module.exports = (sequelize, DataTypes) => {
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
+                unique: true,
             },
             origin: {
                 type: DataTypes.INTEGER,
@@ -60,6 +61,11 @@ module.exports = (sequelize, DataTypes) => {
             companyId: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
+            },
+            type: {
+                type: DataTypes.ENUM('free', 'toll', 'optimal'),
+                allowNull: false,
+                defaultValue: 'optimal',
             },
             active: {
                 type: DataTypes.BOOLEAN,
