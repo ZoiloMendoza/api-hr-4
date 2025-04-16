@@ -1,15 +1,20 @@
 const { CRUDValidator, joyLibrary } = helpers;
-const { client, address } = models;
+const { client } = models;
 
 const Joi = require('joi');
 class ClientValidator extends CRUDValidator {
     constructor() {
         super(client);
-        const addressSchema = Joi.object({
+
+        const addressesSchema = Joi.object({
             addresses: Joi.array().items(validators.address.schema),
         });
+
+        const addressSchema = validators.address.schema;
+
         this.addFieldValidation('rfc', joyLibrary.rfcValidator);
-        this.addSchema('put', '/client/:id/addresses', addressSchema);
+        this.addSchema('put', '/client/:id/addresses', addressesSchema);
+        this.addSchema('put', '/client/:id/addresse/:addressId', addressSchema);
         this.addSchema('get', '/client/:id/addresses', Joi.object({}));
     }
 }

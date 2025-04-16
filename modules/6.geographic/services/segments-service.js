@@ -1,4 +1,4 @@
-const { segment } = models;
+const { segment, location, segmentLocation } = models;
 const LocationsService = require('./locations-service'); //DUDA: ¿por qué no se importa desde helpers?
 const { CRUDService } = helpers;
 const { calcularRuta, obtenerDetalleRuta } = require('../helpers/api-inegi');
@@ -19,6 +19,22 @@ class SegmentsService extends CRUDService {
 
         if (!origin || !destination) {
             throw new Error('Origen o destino no encontrados.');
+        }
+
+        if (
+            !origin.routingLineId ||
+            !origin.routingSourceId ||
+            !origin.routingTargetId
+        ) {
+            throw new Error('Los datos de origen son incompletos.');
+        }
+
+        if (
+            !destination.routingLineId ||
+            !destination.routingSourceId ||
+            !destination.routingTargetId
+        ) {
+            throw new Error('Los datos de destino son incompletos.');
         }
 
         const parametros = {
@@ -138,6 +154,37 @@ class SegmentsService extends CRUDService {
 
         return formattedRoutes;
     }
+
+    // async updateSegmentWithTollBooths(segmentId, updatedSegmentData) {
+    //     const { tollBooths, ...segmentData } = updatedSegmentData;
+
+    //     const segment = await this.readById(segmentId);
+    //     if (!segment) {
+    //         throw new Error('Segmento no encontrado.');
+    //     }
+
+    //     if (tollBooths && Array.isArray(tollBooths)) {
+    //         const tollBoothLocations = await Promise.all(
+    //             tollBooths.map(async (tollBooth) => {
+    //                 const locationData = {
+    //                     name: tollBooth.name,
+    //                     value: tollBooth.amount,
+    //                     nearestPointGeoString: tollBooth.location,
+    //                     type: 'toll',
+    //                 };
+
+    //                 const location = await models.location.create(locationData);
+    //                 return location.id;
+    //             })
+    //         );
+
+    //         await segment.setLocations(tollBoothLocations);
+    //     }
+
+    //     await segment.update(segmentData);
+
+    //     return segment;
+    // }
 }
 
 module.exports = new SegmentsService();

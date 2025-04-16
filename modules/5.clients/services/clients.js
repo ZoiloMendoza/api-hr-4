@@ -27,6 +27,45 @@ class ClientService extends CRUDService {
         return this.update(clientId, clientDb);
     }
 
+    async updateClientAddressById(clientId, addressId, updatedAddress) {
+        const clientDb = await this.readById(clientId);
+        if (!clientDb) {
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('entity not found', 'Cliente'),
+            );
+        }
+
+        if (!clientDb.addresses) {
+            clientDb.addresses = [];
+        }
+
+        const addressesWithIds = clientDb.addresses.map((address, index) => ({
+            ...address,
+            id: index + 1,
+        }));
+
+        const addressIndex = addressesWithIds.findIndex(
+            (address) => address.id === Number(addressId),
+        );
+
+        if (addressIndex === -1) {
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('entity not found', 'Dirección'),
+            );
+        }
+
+        addressesWithIds[addressIndex] = {
+            ...addressesWithIds[addressIndex],
+            ...updatedAddress,
+        };
+
+        clientDb.addresses = addressesWithIds.map(
+            ({ id, ...address }) => address,
+        );
+
+        return this.update(clientId, clientDb);
+    }
+
     async getClientAddresses(clientId) {
         const clientDb = await this.readById(clientId);
         if (!clientDb) {
@@ -34,7 +73,18 @@ class ClientService extends CRUDService {
                 i18n.__('entity not found', 'Cliente'),
             );
         }
-        return clientDb.addresses;
+
+        if (!clientDb.addresses) {
+            clientDb.addresses = [];
+        }
+
+        return clientDb.addresses.map((address, index) => {
+            return {
+                ...address,
+                clientId: clientId,
+                id: index + 1,
+            };
+        });
     }
 }
 

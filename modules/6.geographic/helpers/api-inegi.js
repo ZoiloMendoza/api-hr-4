@@ -62,6 +62,9 @@ async function makeRequest(endpoint, parametros) {
         const jsonResponse = response.data;
 
         if (jsonResponse.response && jsonResponse.response.success) {
+            logger.info(
+                `ZOY API INEGI: ${JSON.stringify(jsonResponse.response)}`,
+            );
             return jsonResponse;
         } else {
             throw new Error(
@@ -70,11 +73,7 @@ async function makeRequest(endpoint, parametros) {
             );
         }
     } catch (error) {
-        throw new Error(
-            `Error en la solicitud a la API de INEGI: ${
-                error.response?.data || error.message
-            }`,
-        );
+        throw new Error(`${error.response?.data || error.message}`);
     }
 }
 
