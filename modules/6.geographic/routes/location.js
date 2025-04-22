@@ -1,5 +1,5 @@
 const { location } = models;
-const { CRUDController } = helpers;
+const { CRUDController, entityErrors } = helpers;
 
 class LocationsController extends CRUDController {
     constructor() {
@@ -13,9 +13,12 @@ class LocationsController extends CRUDController {
                     x,
                     y,
                 );
-                return res.json(response);
+                res.json(response);
             } catch (error) {
-                return res.status(500).json([error.message]);
+                if (error instanceof entityErrors.GenericError) {
+                    return res.status(409).json([error.message]);
+                }
+                res.status(500).json([error.message]);
             }
         });
         // this.addRoute('post', '/location-inegi', async (req, res) => {
@@ -42,13 +45,7 @@ class LocationsController extends CRUDController {
         // });
         this.addRoute('put', '/location-inegi/:id', async (req, res) => {
             try {
-                const {
-                    scale = 10000,
-                    lng,
-                    lat,
-                    name,
-                    description,
-                } = req.input;
+                const { scale = 10, lng, lat, name, description } = req.input;
                 const { id } = req.params;
                 const response = await this.service.updateLocationWithINEGI(
                     id,
@@ -58,9 +55,12 @@ class LocationsController extends CRUDController {
                     name,
                     description,
                 );
-                return res.json(response);
+                res.json(response);
             } catch (error) {
-                return res.status(500).json([error.message]);
+                if (error instanceof entityErrors.GenericError) {
+                    return res.status(409).json([error.message]);
+                }
+                res.status(500).json([error.message]);
             }
         });
 
@@ -71,9 +71,12 @@ class LocationsController extends CRUDController {
                 const response = await this.service.searchLocationByINEGI(
                     value,
                 );
-                return res.json(response);
+                res.json(response);
             } catch (error) {
-                return res.status(500).json([error.message]);
+                if (error instanceof entityErrors.GenericError) {
+                    return res.status(409).json([error.message]);
+                }
+                res.status(500).json([error.message]);
             }
         });
     }

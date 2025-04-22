@@ -1,5 +1,5 @@
 const { segment } = models;
-const { CRUDController } = helpers;
+const { CRUDController, entityErrors } = helpers;
 
 class SegmentsController extends CRUDController {
     constructor() {
@@ -21,9 +21,12 @@ class SegmentsController extends CRUDController {
                     originId,
                     destinationId,
                 );
-                return res.json(response);
+                res.json(response);
             } catch (error) {
-                return res.status(500).json([error.message]);
+                if (error instanceof entityErrors.GenericError) {
+                    return res.status(409).json([error.message]);
+                }
+                res.status(500).json([error.message]);
             }
         });
     }

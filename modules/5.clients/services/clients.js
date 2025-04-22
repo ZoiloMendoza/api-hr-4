@@ -66,6 +66,68 @@ class ClientService extends CRUDService {
         return this.update(clientId, clientDb);
     }
 
+    async addClientAddress(clientId, newAddress) {
+        const clientDb = await this.readById(clientId);
+        if (!clientDb) {
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('entity not found', 'Cliente'),
+            );
+        }
+
+        if (!clientDb.addresses) {
+            clientDb.addresses = [];
+        }
+
+        clientDb.addresses.push(newAddress);
+
+        await this.update(clientId, clientDb);
+
+        return {
+            ...newAddress,
+            id: clientDb.addresses.length,
+        };
+    }
+
+    async deleteClientAddressById(clientId, addressId) {
+        const clientDb = await this.readById(clientId);
+        if (!clientDb) {
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('entity not found', 'Cliente'),
+            );
+        }
+
+        if (!clientDb.addresses) {
+            clientDb.addresses = [];
+        }
+
+        const addressesWithIds = clientDb.addresses.map((address, index) => ({
+            ...address,
+            id: index + 1,
+        }));
+
+        const addressIndex = addressesWithIds.findIndex(
+            (address) => address.id === Number(addressId),
+        );
+
+        if (addressIndex === -1) {
+            throw new entityErrors.EntityNotFoundError(
+                i18n.__('entity not found', 'Dirección'),
+            );
+        }
+
+        const deletedAddress = addressesWithIds[addressIndex];
+
+        addressesWithIds.splice(addressIndex, 1);
+
+        clientDb.addresses = addressesWithIds.map(
+            ({ id, ...address }) => address,
+        );
+
+        await this.update(clientId, clientDb);
+
+        return deletedAddress;
+    }
+
     async getClientAddresses(clientId) {
         const clientDb = await this.readById(clientId);
         if (!clientDb) {

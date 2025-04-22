@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { entityErrors } = helpers;
 
 const API_INEGI = process.env.API_INEGI;
 const API_INEGI_KEY = process.env.API_INEGI_KEY;
@@ -20,14 +21,17 @@ async function buscarLinea(escala, x, y) {
 
 async function buscarDestino(valor) {
     if (valor.length <= 3) {
-        throw new Error('El valor debe tener más de 3 caracteres.');
+        throw new entityErrors.GenericError(
+            'El valor debe tener más de 3 caracteres.',
+        );
     }
+
     return makeRequest(PATHS.buscadestino, { buscar: valor, num: 15 });
 }
 
 async function calcularRuta(tipoRuta, parametros) {
     if (!['libre', 'cuota', 'optima'].includes(tipoRuta)) {
-        throw new Error(
+        throw new entityErrors.GenericError(
             'El tipo de ruta debe ser "libre", "cuota" o "optima".',
         );
     }
@@ -36,7 +40,7 @@ async function calcularRuta(tipoRuta, parametros) {
 
 async function obtenerDetalleRuta(tipoRuta, parametros) {
     if (!['detalle_o', 'detalle_c', 'detalle_l'].includes(tipoRuta)) {
-        throw new Error(
+        throw new entityErrors.GenericError(
             'El tipo de ruta debe ser "libre", "cuota" o "optima".',
         );
     }
@@ -67,13 +71,15 @@ async function makeRequest(endpoint, parametros) {
             );
             return jsonResponse;
         } else {
-            throw new Error(
+            throw new entityErrors.GenericError(
                 jsonResponse.response.message ||
                     'Error desconocido en la API de INEGI',
             );
         }
     } catch (error) {
-        throw new Error(`${error.response?.data || error.message}`);
+        throw new entityErrors.GenericError(
+            `${error.response?.data || error.message}`,
+        );
     }
 }
 

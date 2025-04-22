@@ -14,7 +14,13 @@ class ClientValidator extends CRUDValidator {
 
         this.addFieldValidation('rfc', joyLibrary.rfcValidator);
         this.addSchema('put', '/client/:id/addresses', addressesSchema);
-        this.addSchema('put', '/client/:id/addresse/:addressId', addressSchema);
+        this.addSchema('put', '/client/:id/address/:addressId', addressSchema);
+        this.addSchema(
+            'delete',
+            '/client/:id/address/:addressId',
+            Joi.object({}),
+        );
+        this.addSchema('post', '/client/:id/address', addressSchema);
         this.addSchema('get', '/client/:id/addresses', Joi.object({}));
     }
 }
