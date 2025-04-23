@@ -63,7 +63,9 @@ class ClientService extends CRUDService {
             ({ id, ...address }) => address,
         );
 
-        return this.update(clientId, clientDb);
+        await this.update(clientId, clientDb);
+
+        return addressesWithIds[addressIndex];
     }
 
     async addClientAddress(clientId, newAddress) {
