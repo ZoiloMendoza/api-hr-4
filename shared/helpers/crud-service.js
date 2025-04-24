@@ -5,8 +5,7 @@ const entityErrors = require('./entity-errors');
 const { translateAST } = require('./sequelize-query');
 
 class CRUDService extends BaseService {
-
-    jsonMethods = {}
+    jsonMethods = {};
     relations = {};
 
     constructor(model) {
@@ -14,12 +13,12 @@ class CRUDService extends BaseService {
         this.model = model;
         this.modelName = model.name.toLowerCase();
         this.hasCompany = this.model.rawAttributes.companyId !== undefined;
-        this.addJsonMethods()
+        this.addJsonMethods();
     }
 
     async query(q) {
         try {
-            let sq =  translateAST(q, this.model);
+            let sq = translateAST(q, this.model);
             return await this.model.findAll(sq);
         } catch (error) {
             logger.debug(error);
@@ -29,7 +28,9 @@ class CRUDService extends BaseService {
 
     addRelation(OtherModel, fields) {
         const otherModelName = Utils.pluralize(OtherModel.name);
-        logger.info(`Adding relation from ${this.model.name} to ${otherModelName}`);
+        logger.info(
+            `Adding relation from ${this.model.name} to ${otherModelName}`,
+        );
         if (this.relations[otherModelName]) {
             throw new Error('Relation already added');
         }
@@ -41,34 +42,33 @@ class CRUDService extends BaseService {
                 switch (association.associationType) {
                     case 'BelongsToMany':
                         logger.info(`Adding method assign${otherModelName}`);
-                        this[`assign${otherModelName}`] = this.getAddRelatedList(OtherModel, fields);
+                        this[`assign${otherModelName}`] =
+                            this.getAddRelatedList(OtherModel, fields);
                         logger.info(`Adding method remove${otherModelName}`);
-                        this[`remove${otherModelName}`] = this.getRemoveRelatedList(OtherModel, fields);
+                        this[`remove${otherModelName}`] =
+                            this.getRemoveRelatedList(OtherModel, fields);
                         return association;
                     default:
                         throw new Error('Relation not supported');
-                };
+                }
             }
-        };
+        }
         throw new Error('Relation not found');
     }
-    
+
     addJsonMethods() {
         for (const [field, definition] of Object.entries(
             this.model.rawAttributes,
         )) {
-            if(definition.type.key == DataTypes.JSON.key){
+            if (definition.type.key == DataTypes.JSON.key) {
                 logger.info(`Adding JSON methods for ${field}`);
             }
-        }  
+        }
     }
-    
 
     getModelName() {
         return this.modelName;
     }
-
-
 
     toJson(entity) {
         const json = entity.toJSON();
@@ -79,7 +79,7 @@ class CRUDService extends BaseService {
         return json;
     }
 
-    async create(data) {        
+    async create(data) {
         const getLoggedUser = this.getLoggedUser();
         if (this.hasCompany) {
             data.companyId = getLoggedUser.company.id;
@@ -100,7 +100,6 @@ class CRUDService extends BaseService {
             f = options.filter;
         }
         let translation = translateAST(f, this.model);
-        
 
         options.where = translation.where;
 
@@ -140,7 +139,7 @@ class CRUDService extends BaseService {
     async _readById(id) {
         const loggedUser = this.getLoggedUser();
         //Inject company condition
-        
+
         try {
             const where = { id, active: true };
             if (this.hasCompany) {
@@ -205,16 +204,33 @@ class CRUDService extends BaseService {
 
     getRemoveRelatedList(relatedModel, fields) {
         const relatedModelName = Utils.pluralize(relatedModel.name);
-        let result = async(id, lookup) => {
+
+        const assoc = Object.values(this.model.associations).find(
+            (a) => a.target === relatedModel,
+        );
+
+        if (!assoc) {
+            throw new Error(`No association found for ${relatedModel.name}`);
+        }
+
+        const includeOpts = {
+            association: assoc,
+            attributes: ['id'].concat(fields),
+            where: {},
+            through: { attributes: [] },
+        };
+
+        let result = async (id, lookup) => {
             if (lookup.length === 0) {
-                throw new Error( i18n.__('No elements to add'));
+                throw new Error(i18n.__('No elements to add'));
             }
             const loggedUser = this.getLoggedUser();
-            const whereM = {id: id, active: true };
+            const whereM = { id: id, active: true };
             if (this.hasCompany) {
                 whereM.companyId = loggedUser.company.id;
             }
-            const relatedHasCompany = relatedModel.rawAttributes.companyId !== undefined;
+            const relatedHasCompany =
+                relatedModel.rawAttributes.companyId !== undefined;
             const whereR = { active: true };
             if (relatedHasCompany) {
                 whereR.companyId = loggedUser.company.id;
@@ -222,22 +238,18 @@ class CRUDService extends BaseService {
             try {
                 const elem = await this.model.findOne({
                     where: whereM,
-                    include: [
-                        {
-                            model: relatedModel,
-                            attributes: ['id'].concat(fields),
-                            where: whereR,
-                            through: { attributes: [] },
-                        },
-                    ],
+                    include: [includeOpts],
                 });
                 if (!elem) {
                     throw new entityErrors.EntityNotFoundError(
-                        i18n.__('entity not found', `${this.getModelName()} ${id}`),
+                        i18n.__(
+                            'entity not found',
+                            `${this.getModelName()} ${id}`,
+                        ),
                     );
                 }
 
-                const whereRl  = { [Op.or]: lookup};
+                const whereRl = { [Op.or]: lookup };
                 whereRl.active = true;
                 if (relatedHasCompany) {
                     whereRl.companyId = loggedUser.company.id;
@@ -247,21 +259,18 @@ class CRUDService extends BaseService {
                     where: whereRl,
                 });
 
-
-
                 if (relatedElems.length !== lookup[0].length) {
                     // Extract the "name" field from each object in the array
                     const allElements = relatedElems.map((obj) => {
-                        let res  = '(';
+                        let res = '(';
                         for (const field of fields) {
                             res += obj[field] + ' ';
                         }
                         return res + ')';
                     });
-    
 
                     const neededElements = lookup.map((obj) => {
-                        let res  = '(';
+                        let res = '(';
                         for (const field of fields) {
                             res += obj[field] + ' ';
                         }
@@ -274,81 +283,100 @@ class CRUDService extends BaseService {
                     );
                     if (missingElements.length > 0) {
                         throw new entityErrors.EntityNotFoundError(
-                            i18n.__('missing entities', relatedModelName, missingElements.join(',')),
+                            i18n.__(
+                                'missing entities',
+                                relatedModelName,
+                                missingElements.join(','),
+                            ),
                         );
                     }
                 }
                 const toRemove = [];
                 for (const relElem of relatedElems) {
-                    if (!elem[relatedModelName].some(obj => {
-                        for (let f of fields) {
-                            if (obj[f] !== relElem[f]) {
-                                return false;
+                    if (
+                        !elem[relatedModelName].some((obj) => {
+                            for (let f of fields) {
+                                if (obj[f] !== relElem[f]) {
+                                    return false;
+                                }
                             }
-                        }
-                        return true;
-                    })) {
+                            return true;
+                        })
+                    ) {
                         const e = fields.reduce((obj, key) => {
                             if (!obj.txt) obj.txt = '';
                             if (key in relElem) obj.txt += ` ${relElem[key]}`;
                             return obj;
-                          }, {})
-                        throw new entityErrors.EntityNotFoundError(i18n.__('not associated', relatedModelName, e.txt ));
+                        }, {});
+                        throw new entityErrors.EntityNotFoundError(
+                            i18n.__('not associated', relatedModelName, e.txt),
+                        );
                     }
                     toRemove.push(relElem);
                 }
                 await elem[`remove${relatedModelName}`](toRemove);
-                
-                await elem.reload({ include: [ {
-                    model: relatedModel,
-                    attributes: ['id'].concat(fields),
-                    through: { attributes: [] }
-                  }] });
-                
+
+                await elem.reload({
+                    include: [includeOpts],
+                });
+
                 return this.toJson(elem);
             } catch (error) {
                 logger.error(i18n.__('generic error', error.toString()));
                 throw error;
             }
-
         };
         return result;
     }
 
     getAddRelatedList(relatedModel, fields) {
         const relatedModelName = Utils.pluralize(relatedModel.name);
-        let result = async(id, lookup) => {
+
+        const assoc = Object.values(this.model.associations).find(
+            (a) => a.target === relatedModel,
+        );
+
+        if (!assoc) {
+            throw new Error(`No association found for ${relatedModel.name}`);
+        }
+
+        const includeOpts = {
+            association: assoc,
+            attributes: ['id'].concat(fields),
+            where: {},
+            through: { attributes: [] },
+        };
+
+        let result = async (id, lookup) => {
             if (lookup.length === 0) {
-                throw new Error( i18n.__('No elements to add'));
+                throw new Error(i18n.__('No elements to add'));
             }
             const loggedUser = this.getLoggedUser();
-            const whereM = {id: id, active: true };
+            const whereM = { id: id, active: true };
             if (this.hasCompany) {
                 whereM.companyId = loggedUser.company.id;
             }
-            const relatedHasCompany = relatedModel.rawAttributes.companyId !== undefined;
+            const relatedHasCompany =
+                relatedModel.rawAttributes.companyId !== undefined;
             const whereR = { active: true };
             if (relatedHasCompany) {
                 whereR.companyId = loggedUser.company.id;
             }
             try {
+                includeOpts.where = whereR;
                 const elem = await this.model.findOne({
                     where: whereM,
-                    include: [
-                        {
-                            model: relatedModel,
-                            attributes: ['id'].concat(fields),
-                            where: whereR,
-                            through: { attributes: [] },
-                        },
-                    ],
+                    include: [includeOpts],
                 });
                 if (!elem) {
                     throw new entityErrors.EntityNotFoundError(
-                        i18n.__('entity not found', `${this.getModelName()} ${id}`),
+                        i18n.__(
+                            'entity not found',
+                            `${this.getModelName()} ${id}`,
+                        ),
                     );
                 }
-                const whereRl  = { [Op.or]: lookup};
+                const whereRl = { [Op.or]: lookup };
                 whereRl.active = true;
                 if (relatedHasCompany) {
                     whereRl.companyId = loggedUser.company.id;
@@ -360,16 +388,15 @@ class CRUDService extends BaseService {
                 if (relatedElems.length !== lookup[0].length) {
                     // Extract the "name" field from each object in the array
                     const allElements = relatedElems.map((obj) => {
-                        let res  = '(';
+                        let res = '(';
                         for (const field of fields) {
                             res += obj[field] + ' ';
                         }
                         return res + ')';
                     });
-    
 
                     const neededElements = lookup.map((obj) => {
-                        let res  = '(';
+                        let res = '(';
                         for (const field of fields) {
                             res += obj[field] + ' ';
                         }
@@ -382,36 +409,32 @@ class CRUDService extends BaseService {
                     );
                     if (missingElements.length > 0) {
                         throw new entityErrors.EntityNotFoundError(
-                            i18n.__('missing entities', relatedModelName, missingElements.join(',')),
+                            i18n.__(
+                                'missing entities',
+                                relatedModelName,
+                                missingElements.join(','),
+                            ),
                         );
                     }
                 }
 
                 for (const relElem of relatedElems) {
-
                     // check for duplicates
                     /*if (elem.Roles.some(obj => obj.name === role.name)) {
                          throw new entityErrors.DuplicateEntityError(i18n.__('duplicate role', role.name)); 
                     }*/
                     await elem[`add${relatedModelName}`](relatedElems);
-                 }
-                 await elem.reload({ include: [ {
-                     model: relatedModel,
-                     attributes: ['id'].concat(fields),
-                     through: { attributes: [] }
-                   }] });
-                 
-                 return this.toJson(elem);
+                }
+                await elem.reload({ include: [includeOpts] });
 
+                return this.toJson(elem);
             } catch (error) {
                 logger.error(i18n.__('generic error', error.toString()));
                 throw error;
             }
         };
         return result;
-
     }
-
 }
 
 module.exports = CRUDService;

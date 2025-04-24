@@ -4,7 +4,7 @@ const { CRUDController, entityErrors } = helpers;
 class RoutesController extends CRUDController {
     constructor() {
         super(route);
-        this.addRelation(segment, ['name']);
+        this.addRelation(segment, ['id']);
         this.addRoute('post', '/route/full', async (req, res) => {
             logger.info('Creando una nueva ruta');
             try {

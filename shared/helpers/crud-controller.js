@@ -37,7 +37,10 @@ class CRUDController extends BaseController {
         //create validator for fields
         const relation = this.service.addRelation(OtherModel, fields);
         const otherModelName = Utils.pluralize(OtherModel.name.toLowerCase());
-        const methodName = `assign${this.capitalize(otherModelName)}`; //FIX
+
+        const methodNamePUT = `assign${this.capitalize(otherModelName)}`; //FIX
+        const methodNameDELETE = `remove${this.capitalize(otherModelName)}`; //FIX
+
         let multiple =
             relation.associationType === 'BelongsToMany' ||
             relation.associationType === 'HasMany';
@@ -62,7 +65,10 @@ class CRUDController extends BaseController {
                 const id = req.params.id;
                 try {
                     //ERROR: ej. se enviva assignsegment y esperaba assignSegment
-                    const elem = await this.service[methodName](id, req.input);
+                    const elem = await this.service[methodNamePUT](
+                        id,
+                        req.input,
+                    );
                     return res.json(elem);
                 } catch (error) {
                     if (error instanceof entityErrors.EntityNotFoundError) {
@@ -84,7 +90,7 @@ class CRUDController extends BaseController {
                 );
                 const id = req.params.id;
                 try {
-                    const elem = await this.service[`remove${otherModelName}`](
+                    const elem = await this.service[methodNameDELETE](
                         id,
                         req.input,
                     );
