@@ -214,7 +214,8 @@ class CRUDService extends BaseService {
         }
 
         const includeOpts = {
-            association: assoc,
+            model: relatedModel,
+            as: assoc.as, // FIX
             attributes: ['id'].concat(fields),
             where: {},
             through: { attributes: [] },
@@ -236,6 +237,7 @@ class CRUDService extends BaseService {
                 whereR.companyId = loggedUser.company.id;
             }
             try {
+                includeOpts.where = whereR;
                 const elem = await this.model.findOne({
                     where: whereM,
                     include: [includeOpts],
@@ -292,9 +294,10 @@ class CRUDService extends BaseService {
                     }
                 }
                 const toRemove = [];
+
                 for (const relElem of relatedElems) {
                     if (
-                        !elem[relatedModelName].some((obj) => {
+                        !elem[assoc.as].some((obj) => {
                             for (let f of fields) {
                                 if (obj[f] !== relElem[f]) {
                                     return false;
@@ -326,6 +329,7 @@ class CRUDService extends BaseService {
                 throw error;
             }
         };
+
         return result;
     }
 
