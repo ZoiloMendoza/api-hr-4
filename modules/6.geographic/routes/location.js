@@ -8,11 +8,7 @@ class LocationsController extends CRUDController {
             logger.info('Getting location by coordinates');
             try {
                 const { escala, x, y } = req.input;
-                const response = await this.service.getLocationByCoordinates(
-                    escala,
-                    x,
-                    y,
-                );
+                const response = await this.service.getLocationByCoordinates(escala, x, y);
                 res.json(response);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
@@ -45,16 +41,10 @@ class LocationsController extends CRUDController {
         // });
         this.addRoute('put', '/location-inegi/:id', async (req, res) => {
             try {
-                const { scale = 10, lng, lat, name, description } = req.input;
+                //1000000
+                const { scale = 100000, lng, lat, name, description } = req.input;
                 const { id } = req.params;
-                const response = await this.service.updateLocationWithINEGI(
-                    id,
-                    scale,
-                    lng,
-                    lat,
-                    name,
-                    description,
-                );
+                const response = await this.service.updateLocationWithINEGI(id, scale, lng, lat, name, description);
                 res.json(response);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
@@ -68,9 +58,7 @@ class LocationsController extends CRUDController {
             logger.info('Getting location by INEGI search');
             try {
                 const { value } = req.input;
-                const response = await this.service.searchLocationByINEGI(
-                    value,
-                );
+                const response = await this.service.searchLocationByINEGI(value);
                 res.json(response);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {

@@ -1,7 +1,7 @@
 const SearchResult = require('./search-result');
 const CRUDParser = require('./crud-parser');
 const entityErrors = require('./entity-errors');
-const { Utils } = require('sequelize');
+const { Utils, Op } = require('sequelize');
 const SequelizeValidator = require('./sequelizeValidator');
 
 const BaseController = require('./base-controller');
@@ -40,104 +40,123 @@ class CRUDController extends BaseController {
 
         const methodNamePUT = `assign${this.capitalize(otherModelName)}`; //FIX
         const methodNameDELETE = `remove${this.capitalize(otherModelName)}`; //FIX
+        const methodNameGET = `unrelated${this.capitalize(otherModelName)}`; //FIX
 
-        let multiple =
-            relation.associationType === 'BelongsToMany' ||
-            relation.associationType === 'HasMany';
+        let multiple = relation.associationType === 'BelongsToMany' || relation.associationType === 'HasMany';
         let validator = new SequelizeValidator(OtherModel, fields, multiple);
-        this.validateRoute(
-            'put',
-            `/${this.modelName}/:id/${otherModelName}`,
-            validator.genValidator(),
-        );
-        this.validateRoute(
-            'delete',
-            `/${this.modelName}/:id/${otherModelName}`,
-            validator.genValidator(),
-        );
-        this.addRoute(
-            'put',
-            `/${this.modelName}/:id/${otherModelName}`,
-            async (req, res) => {
-                logger.info(
-                    `Adding ${otherModelName} to ${this.modelName} ${req.params.id}`,
-                );
-                const id = req.params.id;
-                try {
-                    //ERROR: ej. se enviva assignsegment y esperaba assignSegment
-                    const elem = await this.service[methodNamePUT](
-                        id,
-                        req.input,
-                    );
-                    return res.json(elem);
-                } catch (error) {
-                    if (error instanceof entityErrors.EntityNotFoundError) {
-                        return res.status(404).json([error.message]);
-                    }
-                    if (error instanceof entityErrors.UnauthorizedError) {
-                        return res.status(401).json([error.message]);
-                    }
-                    return res.status(501).json([error.message]);
-                }
-            },
-        );
-        this.addRoute(
-            'delete',
-            `/${this.modelName}/:id/${otherModelName}`,
-            async (req, res) => {
-                logger.info(
-                    `Deleting ${otherModelName} from ${this.modelName} ${req.params.id}`,
-                );
-                const id = req.params.id;
-                try {
-                    const elem = await this.service[methodNameDELETE](
-                        id,
-                        req.input,
-                    );
-                    return res.json(elem);
-                } catch (error) {
-                    res.status(500).json([error.message]);
-                }
-            },
-        );
-    }
+        this.validateRoute('put', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
+        this.validateRoute('delete', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
+        this.validateRoute('get', `/${this.modelName}/:id/${otherModelName}/unrelated`, (req, res, next) => {
+            next();
+        });
 
-    addGet() {
-        this.addRoute(
-            'get',
-            `/${Utils.pluralize(this.modelName)}`,
-            async (req, res) => {
-                logger.info(`Querying ${Utils.pluralize(this.modelName)}`);
-                let q = null;
-                try {
-                    q = this.parser.parse(req.query);
-                } catch (error) {
-                    return res.status(400).json(req.__('Invalid query'));
+        this.addRoute('put', `/${this.modelName}/:id/${otherModelName}`, async (req, res) => {
+            logger.info(`Adding ${otherModelName} to ${this.modelName} ${req.params.id}`);
+            const id = req.params.id;
+            try {
+                //ERROR: ej. se enviva assignsegment y esperaba assignSegment
+                const elem = await this.service[methodNamePUT](id, req.input);
+                return res.json(elem);
+            } catch (error) {
+                if (error instanceof entityErrors.EntityNotFoundError) {
+                    return res.status(404).json([error.message]);
+                }
+                if (error instanceof entityErrors.UnauthorizedError) {
+                    return res.status(401).json([error.message]);
+                }
+                return res.status(501).json([error.message]);
+            }
+        });
+        this.addRoute('delete', `/${this.modelName}/:id/${otherModelName}`, async (req, res) => {
+            logger.info(`Deleting ${otherModelName} from ${this.modelName} ${req.params.id}`);
+            const id = req.params.id;
+            try {
+                const elem = await this.service[methodNameDELETE](id, req.input);
+                return res.json(elem);
+            } catch (error) {
+                res.status(500).json([error.message]);
+            }
+        });
+        this.addRoute('get', `/${this.modelName}/:id/${otherModelName}/unrelated`, async (req, res) => {
+            logger.info(`Querying unrelated ${otherModelName} to ${this.modelName} ${req.params.id}`);
+            const id = req.params.id;
+            this.parser2 = new CRUDParser(OtherModel);
+            let q = null;
+            try {
+                logger.info(`Raw req.query: ${JSON.stringify(req.query, null, 2)}`);
+
+                const normalizedQuery = {
+                    start: req.query.start || '1',
+                    limit: req.query.limit || '100',
+                    q: req.query.q || '',
+                    order: req.query.order || 'ASC',
+                    orderBy: req.query.orderBy || 'id',
+                };
+
+                q = this.parser2.parse(normalizedQuery);
+            } catch (error) {
+                return res.status(400).json(req.__('Invalid query'));
+            }
+
+            if (q.start < 0 || q.limit <= 0) {
+                return res.status(400).json();
+            }
+
+            try {
+                const unrelatedIds = await this.service[methodNameGET](id);
+
+                logger.info(`Unrelated IDs to exclude: ${unrelatedIds}`);
+
+                const relatedService = services[OtherModel.name.toLowerCase() + 'Service'];
+                if (!relatedService) {
+                    throw new Error(`Service for ${OtherModel.name} not found`);
                 }
 
-                if (q.start < 0 || q.limit <= 0) {
-                    return res.status(400).json();
-                }
-                try {
-                    const items = await this.service.findAndCountAll({
+                logger.info(`102 Unrelated  ${unrelatedIds}`);
+
+                const items = await relatedService.findAndCountAllWithExclusions(
+                    {
                         offset: q.start,
                         limit: q.limit,
                         filter: q.filter,
                         order: [[q.orderBy, q.order]],
-                    });
-                    return res.json(
-                        new SearchResult(
-                            items.rows,
-                            q.start + 1,
-                            q.limit,
-                            items.count,
-                        ),
-                    );
-                } catch (error) {
-                    return this.throwError(error, req, res);
-                }
-            },
-        );
+                    },
+                    unrelatedIds,
+                );
+
+                return res.json(new SearchResult(items.rows, q.start + 1, q.limit, items.count));
+            } catch (error) {
+                return this.throwError(error, req, res);
+            }
+        });
+    }
+
+    addGet() {
+        this.addRoute('get', `/${Utils.pluralize(this.modelName)}`, async (req, res) => {
+            logger.info(`Querying ${Utils.pluralize(this.modelName)}`);
+            let q = null;
+            try {
+                logger.info(`115 get normal req-query q ${JSON.stringify(req.query, null, 2)}`);
+                q = this.parser.parse(req.query);
+            } catch (error) {
+                return res.status(400).json(req.__('Invalid query'));
+            }
+
+            if (q.start < 0 || q.limit <= 0) {
+                return res.status(400).json();
+            }
+            try {
+                const items = await this.service.findAndCountAll({
+                    offset: q.start,
+                    limit: q.limit,
+                    filter: q.filter,
+                    order: [[q.orderBy, q.order]],
+                });
+                return res.json(new SearchResult(items.rows, q.start + 1, q.limit, items.count));
+            } catch (error) {
+                return this.throwError(error, req, res);
+            }
+        });
     }
 
     addGetOne() {
@@ -203,9 +222,7 @@ class CRUDController extends BaseController {
             });
 
             if (error) {
-                return res
-                    .status(400)
-                    .json(error.details.map((detail) => detail.message));
+                return res.status(400).json(error.details.map((detail) => detail.message));
             }
 
             req.input = value;

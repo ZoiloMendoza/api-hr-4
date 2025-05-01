@@ -43,6 +43,7 @@ class LocationsService extends CRUDService {
     }
 
     async updateLocationWithINEGI(id, scale, lng, lat, name, description) {
+        logger.info('ZOYYYYYY Updating location with INEGI', lng);
         const responseInegi = await buscarLinea(scale, lng, lat);
         let locationData = null;
         const { data } = responseInegi;

@@ -2,18 +2,14 @@ const { segment, location, segmentLocation } = models;
 const LocationsService = require('./locations-service'); //DUDA: ¿por qué no se importa desde helpers?
 const { CRUDService } = helpers;
 const { calcularRuta, obtenerDetalleRuta } = require('../helpers/api-inegi');
+const NodeCache = require('node-cache');
 class SegmentsService extends CRUDService {
     constructor() {
         super(segment);
+        this.cache = new NodeCache({ stdTTL: 3600 });
     }
 
-    async calculateSegment(
-        optimalRoute = true,
-        tollRoute = true,
-        freeRoute = true,
-        originId,
-        destinationId,
-    ) {
+    async calculateSegment(optimalRoute = true, tollRoute = true, freeRoute = true, originId, destinationId) {
         const origin = await LocationsService.readById(originId);
         const destination = await LocationsService.readById(destinationId);
 
@@ -21,19 +17,11 @@ class SegmentsService extends CRUDService {
             throw new Error('Origen o destino no encontrados.');
         }
 
-        if (
-            !origin.routingLineId ||
-            !origin.routingSourceId ||
-            !origin.routingTargetId
-        ) {
+        if (!origin.routingLineId || !origin.routingSourceId || !origin.routingTargetId) {
             throw new Error('Los datos de origen son incompletos.');
         }
 
-        if (
-            !destination.routingLineId ||
-            !destination.routingSourceId ||
-            !destination.routingTargetId
-        ) {
+        if (!destination.routingLineId || !destination.routingSourceId || !destination.routingTargetId) {
             throw new Error('Los datos de destino son incompletos.');
         }
 
@@ -50,7 +38,7 @@ class SegmentsService extends CRUDService {
         const promises = [];
         if (freeRoute) {
             promises.push(
-                calcularRuta('libre', parametros).then((result) => ({
+                this.cachedCalcularRuta('libre', parametros).then((result) => ({
                     type: 'freeRoute',
                     geojson: result.data.geojson,
                     tollBoothsAmount: result.data.costo_caseta,
@@ -60,7 +48,7 @@ class SegmentsService extends CRUDService {
                 })),
             );
             promises.push(
-                obtenerDetalleRuta('detalle_l', parametros).then((result) => ({
+                this.cachedObtenerDetalleRuta('detalle_l', parametros).then((result) => ({
                     type: 'freeRouteDetail',
                     detail: result.data,
                 })),
@@ -68,7 +56,7 @@ class SegmentsService extends CRUDService {
         }
         if (tollRoute) {
             promises.push(
-                calcularRuta('cuota', parametros).then((result) => ({
+                this.cachedCalcularRuta('cuota', parametros).then((result) => ({
                     type: 'tollRoute',
                     geojson: result.data.geojson,
                     geojson: result.data.geojson,
@@ -79,7 +67,7 @@ class SegmentsService extends CRUDService {
                 })),
             );
             promises.push(
-                obtenerDetalleRuta('detalle_c', parametros).then((result) => ({
+                this.cachedObtenerDetalleRuta('detalle_c', parametros).then((result) => ({
                     type: 'tollRouteDetail',
                     detail: result.data,
                 })),
@@ -87,7 +75,7 @@ class SegmentsService extends CRUDService {
         }
         if (optimalRoute) {
             promises.push(
-                calcularRuta('optima', parametros).then((result) => ({
+                this.cachedCalcularRuta('optima', parametros).then((result) => ({
                     type: 'optimalRoute',
                     geojson: result.data.geojson,
                     geojson: result.data.geojson,
@@ -98,7 +86,7 @@ class SegmentsService extends CRUDService {
                 })),
             );
             promises.push(
-                obtenerDetalleRuta('detalle_o', parametros).then((result) => ({
+                this.cachedObtenerDetalleRuta('detalle_o', parametros).then((result) => ({
                     type: 'optimalRouteDetail',
                     detail: result.data,
                 })),
@@ -112,15 +100,7 @@ class SegmentsService extends CRUDService {
 
         results.forEach((result) => {
             if (result.status === 'fulfilled') {
-                const {
-                    type,
-                    geojson,
-                    detail,
-                    tollBoothsAmount,
-                    time,
-                    km,
-                    peaje,
-                } = result.value;
+                const { type, geojson, detail, tollBoothsAmount, time, km, peaje } = result.value;
                 if (type.endsWith('Detail')) {
                     detalles[type.replace('Detail', '')] = detail;
                 } else {
@@ -155,36 +135,35 @@ class SegmentsService extends CRUDService {
         return formattedRoutes;
     }
 
-    // async updateSegmentWithTollBooths(segmentId, updatedSegmentData) {
-    //     const { tollBooths, ...segmentData } = updatedSegmentData;
+    async cachedCalcularRuta(tipoRuta, parametros) {
+        const cacheKey = `calcularRuta-${tipoRuta}-${JSON.stringify(parametros)}`;
+        let result = this.cache.get(cacheKey);
 
-    //     const segment = await this.readById(segmentId);
-    //     if (!segment) {
-    //         throw new Error('Segmento no encontrado.');
-    //     }
+        if (!result) {
+            logger.info(`Cache miss for calcularRuta: ${cacheKey}`);
+            result = await calcularRuta(tipoRuta, parametros); // Llama a la API
+            this.cache.set(cacheKey, result); // Almacena el resultado en el caché
+        } else {
+            logger.info(`Cache hit for calcularRuta: ${cacheKey}`);
+        }
 
-    //     if (tollBooths && Array.isArray(tollBooths)) {
-    //         const tollBoothLocations = await Promise.all(
-    //             tollBooths.map(async (tollBooth) => {
-    //                 const locationData = {
-    //                     name: tollBooth.name,
-    //                     value: tollBooth.amount,
-    //                     nearestPointGeoString: tollBooth.location,
-    //                     type: 'toll',
-    //                 };
+        return result;
+    }
 
-    //                 const location = await models.location.create(locationData);
-    //                 return location.id;
-    //             })
-    //         );
+    async cachedObtenerDetalleRuta(tipoDetalle, parametros) {
+        const cacheKey = `obtenerDetalleRuta-${tipoDetalle}-${JSON.stringify(parametros)}`;
+        let result = this.cache.get(cacheKey);
 
-    //         await segment.setLocations(tollBoothLocations);
-    //     }
+        if (!result) {
+            logger.info(`Cache miss for obtenerDetalleRuta: ${cacheKey}`);
+            result = await obtenerDetalleRuta(tipoDetalle, parametros); // Llama a la API
+            this.cache.set(cacheKey, result); // Almacena el resultado en el caché
+        } else {
+            logger.info(`Cache hit for obtenerDetalleRuta: ${cacheKey}`);
+        }
 
-    //     await segment.update(segmentData);
-
-    //     return segment;
-    // }
+        return result;
+    }
 }
 
 module.exports = new SegmentsService();

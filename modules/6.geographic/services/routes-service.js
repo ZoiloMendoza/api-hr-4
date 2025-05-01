@@ -15,15 +15,11 @@ class RoutesService extends CRUDService {
 
         const segmentIds = segments.map((segment) => segment.segmentId);
 
-        const duplicateSegmentIds = segmentIds.filter(
-            (id, index) => segmentIds.indexOf(id) !== index,
-        );
+        const duplicateSegmentIds = segmentIds.filter((id, index) => segmentIds.indexOf(id) !== index);
 
         const orderIndexes = segments.map((segment) => segment.orderIndex);
 
-        const duplicateOrderIndexes = orderIndexes.filter(
-            (index, i) => orderIndexes.indexOf(index) !== i,
-        );
+        const duplicateOrderIndexes = orderIndexes.filter((index, i) => orderIndexes.indexOf(index) !== i);
 
         if (duplicateOrderIndexes.length > 0) {
             throw new entityErrors.GenericError(
@@ -53,16 +49,14 @@ class RoutesService extends CRUDService {
 
         if (duplicateSegmentIds.length > 0) {
             throw new entityErrors.GenericError(
-                `La ruta no puede tener segmentos duplicados. IDs duplicados: ${[
-                    ...new Set(duplicateSegmentIds),
-                ].join(', ')}`,
+                `La ruta no puede tener segmentos duplicados. IDs duplicados: ${[...new Set(duplicateSegmentIds)].join(
+                    ', ',
+                )}`,
             );
         }
 
         if (existingSegments.length !== segments.length) {
-            throw new entityErrors.GenericError(
-                'Algunos tramos no están disponibles, seleccione otros',
-            );
+            throw new entityErrors.GenericError('Algunos tramos no están disponibles, seleccione otros');
         }
 
         const segmentTypes = existingSegments.map((segment) => segment.type);
@@ -75,18 +69,12 @@ class RoutesService extends CRUDService {
             segmentsType = 'multi';
         }
 
-        const orderedSegments = segments.sort(
-            (a, b) => a.orderIndex - b.orderIndex,
-        );
+        const orderedSegments = segments.sort((a, b) => a.orderIndex - b.orderIndex);
 
-        const firstSegment = existingSegments.find(
-            (segment) => segment.id === orderedSegments[0].segmentId,
-        );
+        const firstSegment = existingSegments.find((segment) => segment.id === orderedSegments[0].segmentId);
 
         const lastSegment = existingSegments.find(
-            (segment) =>
-                segment.id ===
-                orderedSegments[orderedSegments.length - 1].segmentId,
+            (segment) => segment.id === orderedSegments[orderedSegments.length - 1].segmentId,
         );
 
         const startCity = firstSegment.originLocation.name;
@@ -96,12 +84,8 @@ class RoutesService extends CRUDService {
         let routeType;
         if (startCity === endCity && segments.length > 1) {
             // Viaje redondo
-            const secondSegment = existingSegments.find(
-                (segment) => segment.id === orderedSegments[1].segmentId,
-            );
-            const middleCity = secondSegment
-                ? secondSegment.originLocation.name
-                : '';
+            const secondSegment = existingSegments.find((segment) => segment.id === orderedSegments[1].segmentId);
+            const middleCity = secondSegment ? secondSegment.originLocation.name : '';
             routeName = `${startCity} - ${middleCity} - ${endCity}`;
             routeType = 'roundtrip';
         } else {
@@ -133,12 +117,7 @@ class RoutesService extends CRUDService {
                     model: models.segment,
                     as: 'segments',
                     attributes: {
-                        exclude: [
-                            'companyId',
-                            'active',
-                            'createdAt',
-                            'updatedAt',
-                        ],
+                        exclude: ['companyId', 'active', 'createdAt', 'updatedAt'],
                     },
                     through: { attributes: ['orderIndex'] },
                     include: [
@@ -167,6 +146,20 @@ class RoutesService extends CRUDService {
         };
 
         return response;
+    }
+
+    async getSegmentsNotInRoute(segments) {
+        // const segmentIds = segments.map((segment) => segment.segmentId);
+
+        // const detailedSegments = await segment.findAll({
+        //     where: {
+        //         id: segments,
+        //     },
+        //     attributes: {
+        //         exclude: ['companyId', 'active', 'createdAt', 'updatedAt'],
+        //     },
+        // });
+        return segments;
     }
 
     slugify(texto) {

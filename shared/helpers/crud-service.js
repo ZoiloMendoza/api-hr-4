@@ -28,9 +28,7 @@ class CRUDService extends BaseService {
 
     addRelation(OtherModel, fields) {
         const otherModelName = Utils.pluralize(OtherModel.name);
-        logger.info(
-            `Adding relation from ${this.model.name} to ${otherModelName}`,
-        );
+        logger.info(`Adding relation from ${this.model.name} to ${otherModelName}`);
         if (this.relations[otherModelName]) {
             throw new Error('Relation already added');
         }
@@ -42,11 +40,10 @@ class CRUDService extends BaseService {
                 switch (association.associationType) {
                     case 'BelongsToMany':
                         logger.info(`Adding method assign${otherModelName}`);
-                        this[`assign${otherModelName}`] =
-                            this.getAddRelatedList(OtherModel, fields);
+                        this[`assign${otherModelName}`] = this.getAddRelatedList(OtherModel, fields);
                         logger.info(`Adding method remove${otherModelName}`);
-                        this[`remove${otherModelName}`] =
-                            this.getRemoveRelatedList(OtherModel, fields);
+                        this[`remove${otherModelName}`] = this.getRemoveRelatedList(OtherModel, fields);
+                        this[`unrelated${otherModelName}`] = this.getUnrelatedList(OtherModel);
                         return association;
                     default:
                         throw new Error('Relation not supported');
@@ -57,9 +54,7 @@ class CRUDService extends BaseService {
     }
 
     addJsonMethods() {
-        for (const [field, definition] of Object.entries(
-            this.model.rawAttributes,
-        )) {
+        for (const [field, definition] of Object.entries(this.model.rawAttributes)) {
             if (definition.type.key == DataTypes.JSON.key) {
                 logger.info(`Adding JSON methods for ${field}`);
             }
@@ -117,6 +112,42 @@ class CRUDService extends BaseService {
         }
     }
 
+    async findAndCountAllWithExclusions(options = {}, exclusions = []) {
+        const loggedUser = this.getLoggedUser();
+        let f = {};
+        if (options.filter) {
+            f = options.filter;
+        }
+
+        // Traducir el filtro inicial
+        let translation = translateAST(f, this.model);
+
+        // Combinar el filtro traducido con el filtro existente en `options.where`
+        options.where = {
+            ...translation.where, // Filtros traducidos
+            ...options.where, // Filtros adicionales
+        };
+
+        // Agregar exclusiones si existen
+        if (exclusions.length > 0) {
+            options.where.id = { [Op.notIn]: exclusions };
+        }
+
+        // Inyectar la condición de compañía si aplica
+        if (this.hasCompany) {
+            options.where.companyId = loggedUser.company.id;
+        }
+
+        try {
+            const records = await this.model.findAndCountAll(options);
+            records.rows = records.rows.map((item) => this.toJson(item));
+            return records;
+        } catch (error) {
+            logger.debug(error);
+            throw error;
+        }
+    }
+
     async findAll(options = {}) {
         const loggedUser = this.getLoggedUser();
         //Inject company condition
@@ -149,9 +180,7 @@ class CRUDService extends BaseService {
                 where,
             });
             if (!record) {
-                throw new EntityNotFoundError(
-                    i18n.__('entity not found', this.getModelName()),
-                );
+                throw new EntityNotFoundError(i18n.__('entity not found', this.getModelName()));
             }
             /*if (this.hasCompany) {
                 if (record.companyId !== loggedUser.company.id) {
@@ -205,9 +234,7 @@ class CRUDService extends BaseService {
     getRemoveRelatedList(relatedModel, fields) {
         const relatedModelName = Utils.pluralize(relatedModel.name);
 
-        const assoc = Object.values(this.model.associations).find(
-            (a) => a.target === relatedModel,
-        );
+        const assoc = Object.values(this.model.associations).find((a) => a.target === relatedModel);
 
         if (!assoc) {
             throw new Error(`No association found for ${relatedModel.name}`);
@@ -230,8 +257,7 @@ class CRUDService extends BaseService {
             if (this.hasCompany) {
                 whereM.companyId = loggedUser.company.id;
             }
-            const relatedHasCompany =
-                relatedModel.rawAttributes.companyId !== undefined;
+            const relatedHasCompany = relatedModel.rawAttributes.companyId !== undefined;
             const whereR = { active: true };
             if (relatedHasCompany) {
                 whereR.companyId = loggedUser.company.id;
@@ -244,10 +270,7 @@ class CRUDService extends BaseService {
                 });
                 if (!elem) {
                     throw new entityErrors.EntityNotFoundError(
-                        i18n.__(
-                            'entity not found',
-                            `${this.getModelName()} ${id}`,
-                        ),
+                        i18n.__('entity not found', `${this.getModelName()} ${id}`),
                     );
                 }
 
@@ -280,16 +303,10 @@ class CRUDService extends BaseService {
                     });
 
                     // Find strings that are not in the object names
-                    const missingElements = neededElements.filter(
-                        (str) => !allElements.includes(str),
-                    );
+                    const missingElements = neededElements.filter((str) => !allElements.includes(str));
                     if (missingElements.length > 0) {
                         throw new entityErrors.EntityNotFoundError(
-                            i18n.__(
-                                'missing entities',
-                                relatedModelName,
-                                missingElements.join(','),
-                            ),
+                            i18n.__('missing entities', relatedModelName, missingElements.join(',')),
                         );
                     }
                 }
@@ -311,9 +328,7 @@ class CRUDService extends BaseService {
                             if (key in relElem) obj.txt += ` ${relElem[key]}`;
                             return obj;
                         }, {});
-                        throw new entityErrors.EntityNotFoundError(
-                            i18n.__('not associated', relatedModelName, e.txt),
-                        );
+                        throw new entityErrors.EntityNotFoundError(i18n.__('not associated', relatedModelName, e.txt));
                     }
                     toRemove.push(relElem);
                 }
@@ -336,9 +351,7 @@ class CRUDService extends BaseService {
     getAddRelatedList(relatedModel, fields) {
         const relatedModelName = Utils.pluralize(relatedModel.name);
 
-        const assoc = Object.values(this.model.associations).find(
-            (a) => a.target === relatedModel,
-        );
+        const assoc = Object.values(this.model.associations).find((a) => a.target === relatedModel);
 
         if (!assoc) {
             throw new Error(`No association found for ${relatedModel.name}`);
@@ -360,8 +373,7 @@ class CRUDService extends BaseService {
             if (this.hasCompany) {
                 whereM.companyId = loggedUser.company.id;
             }
-            const relatedHasCompany =
-                relatedModel.rawAttributes.companyId !== undefined;
+            const relatedHasCompany = relatedModel.rawAttributes.companyId !== undefined;
             const whereR = { active: true };
             if (relatedHasCompany) {
                 whereR.companyId = loggedUser.company.id;
@@ -374,10 +386,7 @@ class CRUDService extends BaseService {
                 });
                 if (!elem) {
                     throw new entityErrors.EntityNotFoundError(
-                        i18n.__(
-                            'entity not found',
-                            `${this.getModelName()} ${id}`,
-                        ),
+                        i18n.__('entity not found', `${this.getModelName()} ${id}`),
                     );
                 }
                 const whereRl = { [Op.or]: lookup };
@@ -408,16 +417,10 @@ class CRUDService extends BaseService {
                     });
 
                     // Find strings that are not in the object names
-                    const missingElements = neededElements.filter(
-                        (str) => !allElements.includes(str),
-                    );
+                    const missingElements = neededElements.filter((str) => !allElements.includes(str));
                     if (missingElements.length > 0) {
                         throw new entityErrors.EntityNotFoundError(
-                            i18n.__(
-                                'missing entities',
-                                relatedModelName,
-                                missingElements.join(','),
-                            ),
+                            i18n.__('missing entities', relatedModelName, missingElements.join(',')),
                         );
                     }
                 }
@@ -437,6 +440,51 @@ class CRUDService extends BaseService {
                 throw error;
             }
         };
+        return result;
+    }
+
+    getUnrelatedList(relatedModel) {
+        const assoc = Object.values(this.model.associations).find((a) => a.target === relatedModel);
+
+        if (!assoc) {
+            throw new Error(`No association found for ${relatedModel.name}`);
+        }
+
+        let result = async (id) => {
+            const loggedUser = this.getLoggedUser();
+            const whereM = { id: id, active: true };
+            if (this.hasCompany) {
+                whereM.companyId = loggedUser.company.id;
+            }
+            try {
+                // Obtener el elemento principal con sus relaciones
+                const elem = await this.model.findOne({
+                    where: whereM,
+                    include: [
+                        {
+                            model: relatedModel,
+                            as: assoc.as,
+                            attributes: ['id'], // Solo necesitamos los IDs
+                            through: { attributes: [] },
+                        },
+                    ],
+                });
+                if (!elem) {
+                    throw new entityErrors.EntityNotFoundError(
+                        i18n.__('entity not found', `${this.getModelName()} ${id}`),
+                    );
+                }
+
+                // Obtener los IDs de los elementos relacionados
+                const relatedIds = elem[assoc.as].map((relElem) => relElem.id);
+
+                return relatedIds; // Devuelve solo los IDs relacionados
+            } catch (error) {
+                logger.error(i18n.__('generic error', error.toString()));
+                throw error;
+            }
+        };
+
         return result;
     }
 }
