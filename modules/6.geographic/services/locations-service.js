@@ -1,50 +1,33 @@
 const { location } = models;
-const { CRUDService } = helpers;
+const { CRUDService, entityErrors } = helpers;
 const { buscarLinea, buscarDestino } = require('../helpers/api-inegi');
-
+const { searchPlace } = require('../helpers/api-nominatim');
+const NodeCache = require('node-cache');
 class LocationsService extends CRUDService {
     constructor() {
         super(location);
-    }
-
-    async getLocationByCoordinates(escala, x, y) {
-        const response = await buscarLinea(escala, x, y);
-        return response;
-    }
-
-    async addLocationWithINEGI(scale, lng, lat, name, description) {
-        const responseInegi = await buscarLinea(scale, lng, lat);
-        let locationData = null;
-        const { data } = responseInegi;
-        if (data) {
-            const { geojson, source, id_routing_net, nombre, target } = data;
-            locationData = {
-                name,
-                description,
-                lat, //TODO: Cambiar a latitud a los de geojson
-                lng, //TODO: Cambiar a latitud a los de geojson
-                routingLineId: id_routing_net,
-                routingSourceId: source,
-                routingTargetId: target,
-                roadName: nombre,
-                scale,
-                nearestPointGeoString: geojson,
-            };
-        } else {
-            locationData = {
-                name,
-                description,
-                lat: y,
-                lng: x,
-                scale,
-            };
-        }
-        return this.create(locationData);
+        this.cache = new NodeCache({ stdTTL: 86400 }); // 1 día
     }
 
     async updateLocationWithINEGI(id, scale, lng, lat, name, description) {
-        logger.info('ZOYYYYYY Updating location with INEGI', lng);
-        const responseInegi = await buscarLinea(scale, lng, lat);
+        const currentLocation = await this.model.findByPk(id);
+
+        if (!currentLocation) {
+            throw new entityErrors.GenericError(`No se encontró la ubicación con el ID ${id}.`);
+        }
+
+        if (currentLocation.lat === lat && currentLocation.lng === lng) {
+            return currentLocation;
+        }
+
+        const cacheKey = `inegi:update:${scale}:${lng}:${lat}`;
+        let responseInegi = this.cache.get(cacheKey);
+
+        if (!responseInegi) {
+            responseInegi = await buscarLinea(scale, lng, lat);
+            this.cache.set(cacheKey, responseInegi);
+        }
+
         let locationData = null;
         const { data } = responseInegi;
 
@@ -71,15 +54,23 @@ class LocationsService extends CRUDService {
                 scale,
             };
         }
+
         delete locationData.id;
         return this.update(id, locationData);
     }
 
     async searchLocationByINEGI(value) {
-        const responseInegi = await buscarDestino(value);
+        const cacheKey = `inegi:search:${value}`;
+        let responseInegi = this.cache.get(cacheKey);
+
+        if (!responseInegi) {
+            responseInegi = await buscarDestino(value);
+            this.cache.set(cacheKey, responseInegi);
+        }
+
         let parseResponse = null;
         if (responseInegi) {
-            parseResponse = responseInegi.map((item) => {
+            parseResponse = responseInegi.data.map((item) => {
                 const { geojson, nombre, id_dest } = item;
                 const geojsonParsed = JSON.parse(geojson);
                 const { coordinates } = geojsonParsed;
@@ -93,6 +84,18 @@ class LocationsService extends CRUDService {
             });
         }
         return parseResponse;
+    }
+
+    async searchLocationByNominatim(value) {
+        const cacheKey = `nominatim:search:${value}`;
+        let responseNominatim = this.cache.get(cacheKey);
+
+        if (!responseNominatim) {
+            responseNominatim = await searchPlace(value);
+            this.cache.set(cacheKey, responseNominatim);
+        }
+
+        return responseNominatim;
     }
 }
 

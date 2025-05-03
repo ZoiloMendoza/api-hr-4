@@ -40,7 +40,7 @@ class CRUDController extends BaseController {
 
         const methodNamePUT = `assign${this.capitalize(otherModelName)}`; //FIX
         const methodNameDELETE = `remove${this.capitalize(otherModelName)}`; //FIX
-        const methodNameGET = `unrelated${this.capitalize(otherModelName)}`; //FIX
+        const methodNameGET = `related${this.capitalize(otherModelName)}`; //FIX
 
         let multiple = relation.associationType === 'BelongsToMany' || relation.associationType === 'HasMany';
         let validator = new SequelizeValidator(OtherModel, fields, multiple);
@@ -103,16 +103,12 @@ class CRUDController extends BaseController {
             }
 
             try {
-                const unrelatedIds = await this.service[methodNameGET](id);
-
-                logger.info(`Unrelated IDs to exclude: ${unrelatedIds}`);
+                const relatedIds = await this.service[methodNameGET](id);
 
                 const relatedService = services[OtherModel.name.toLowerCase() + 'Service'];
                 if (!relatedService) {
                     throw new Error(`Service for ${OtherModel.name} not found`);
                 }
-
-                logger.info(`102 Unrelated  ${unrelatedIds}`);
 
                 const items = await relatedService.findAndCountAllWithExclusions(
                     {
@@ -121,7 +117,7 @@ class CRUDController extends BaseController {
                         filter: q.filter,
                         order: [[q.orderBy, q.order]],
                     },
-                    unrelatedIds,
+                    relatedIds,
                 );
 
                 return res.json(new SearchResult(items.rows, q.start + 1, q.limit, items.count));

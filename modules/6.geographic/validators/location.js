@@ -19,15 +19,12 @@ class LocationValidator extends CRUDValidator {
             Joi.object({
                 name: Joi.string().max(100).required().messages({
                     'string.base': 'El nombre debe ser una cadena de texto.',
-                    'string.max':
-                        'El nombre no puede tener más de 100 caracteres.',
+                    'string.max': 'El nombre no puede tener más de 100 caracteres.',
                     'any.required': 'El nombre es obligatorio.',
                 }),
                 description: Joi.string().max(100).optional().messages({
-                    'string.base':
-                        'La descripción debe ser una cadena de texto.',
-                    'string.max':
-                        'La descripción no puede tener más de 100 caracteres.',
+                    'string.base': 'La descripción debe ser una cadena de texto.',
+                    'string.max': 'La descripción no puede tener más de 100 caracteres.',
                 }),
                 scale: Joi.number().min(1).max(10000).optional().messages({
                     'number.base': 'La escala debe ser un número.',
@@ -52,6 +49,18 @@ class LocationValidator extends CRUDValidator {
         this.addSchema(
             'post',
             '/location-inegi-search',
+            Joi.object({
+                value: Joi.string().min(3).required().messages({
+                    'string.base': 'El valor debe ser una cadena de texto.',
+                    'string.min': 'El valor debe tener al menos 3 caracteres.',
+                    'any.required': 'El valor es obligatorio.',
+                }),
+            }),
+        );
+
+        this.addSchema(
+            'post',
+            '/location-nominatim-search',
             Joi.object({
                 value: Joi.string().min(3).required().messages({
                     'string.base': 'El valor debe ser una cadena de texto.',

@@ -1,47 +1,12 @@
 const { location } = models;
-const { CRUDController, entityErrors } = helpers;
+const { CRUDController, entityErrors, SearchResult } = helpers;
 
 class LocationsController extends CRUDController {
     constructor() {
         super(location);
-        this.addRoute('post', '/location/coordinates', async (req, res) => {
-            logger.info('Getting location by coordinates');
-            try {
-                const { escala, x, y } = req.input;
-                const response = await this.service.getLocationByCoordinates(escala, x, y);
-                res.json(response);
-            } catch (error) {
-                if (error instanceof entityErrors.GenericError) {
-                    return res.status(409).json([error.message]);
-                }
-                res.status(500).json([error.message]);
-            }
-        });
-        // this.addRoute('post', '/location-inegi', async (req, res) => {
-        //     logger.info('Getting location by INEGI');
-        //     try {
-        //         const {
-        //             scale = 10000,
-        //             lng,
-        //             lat,
-        //             name,
-        //             description,
-        //         } = req.input;
-        //         const response = await this.service.addLocationWithINEGI(
-        //             scale,
-        //             lng,
-        //             lat,
-        //             name,
-        //             description,
-        //         );
-        //         return res.json(response);
-        //     } catch (error) {
-        //         return res.status(500).json([error.message]);
-        //     }
-        // });
+
         this.addRoute('put', '/location-inegi/:id', async (req, res) => {
             try {
-                //1000000
                 const { scale = 100000, lng, lat, name, description } = req.input;
                 const { id } = req.params;
                 const response = await this.service.updateLocationWithINEGI(id, scale, lng, lat, name, description);
@@ -59,7 +24,21 @@ class LocationsController extends CRUDController {
             try {
                 const { value } = req.input;
                 const response = await this.service.searchLocationByINEGI(value);
-                res.json(response);
+                res.json(new SearchResult(response, 1, response.length, response.length));
+            } catch (error) {
+                if (error instanceof entityErrors.GenericError) {
+                    return res.status(409).json([error.message]);
+                }
+                res.status(500).json([error.message]);
+            }
+        });
+
+        this.addRoute('post', '/location-nominatim-search', async (req, res) => {
+            logger.info('Getting location by INEGI search');
+            try {
+                const { value } = req.input;
+                const response = await this.service.searchLocationByNominatim(value);
+                res.json(new SearchResult(response, 1, response.length, response.length));
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
                     return res.status(409).json([error.message]);

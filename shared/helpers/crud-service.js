@@ -41,9 +41,12 @@ class CRUDService extends BaseService {
                     case 'BelongsToMany':
                         logger.info(`Adding method assign${otherModelName}`);
                         this[`assign${otherModelName}`] = this.getAddRelatedList(OtherModel, fields);
+
                         logger.info(`Adding method remove${otherModelName}`);
                         this[`remove${otherModelName}`] = this.getRemoveRelatedList(OtherModel, fields);
-                        this[`unrelated${otherModelName}`] = this.getUnrelatedList(OtherModel);
+
+                        logger.info(`Adding method related${otherModelName}`);
+                        this[`related${otherModelName}`] = this.getRelatedIds(OtherModel);
                         return association;
                     default:
                         throw new Error('Relation not supported');
@@ -119,21 +122,17 @@ class CRUDService extends BaseService {
             f = options.filter;
         }
 
-        // Traducir el filtro inicial
         let translation = translateAST(f, this.model);
 
-        // Combinar el filtro traducido con el filtro existente en `options.where`
         options.where = {
-            ...translation.where, // Filtros traducidos
-            ...options.where, // Filtros adicionales
+            ...translation.where,
+            ...options.where,
         };
 
-        // Agregar exclusiones si existen
         if (exclusions.length > 0) {
             options.where.id = { [Op.notIn]: exclusions };
         }
 
-        // Inyectar la condición de compañía si aplica
         if (this.hasCompany) {
             options.where.companyId = loggedUser.company.id;
         }
@@ -443,7 +442,7 @@ class CRUDService extends BaseService {
         return result;
     }
 
-    getUnrelatedList(relatedModel) {
+    getRelatedIds(relatedModel) {
         const assoc = Object.values(this.model.associations).find((a) => a.target === relatedModel);
 
         if (!assoc) {
@@ -457,28 +456,27 @@ class CRUDService extends BaseService {
                 whereM.companyId = loggedUser.company.id;
             }
             try {
-                // Obtener el elemento principal con sus relaciones
                 const elem = await this.model.findOne({
                     where: whereM,
                     include: [
                         {
                             model: relatedModel,
                             as: assoc.as,
-                            attributes: ['id'], // Solo necesitamos los IDs
+                            attributes: ['id'],
                             through: { attributes: [] },
                         },
                     ],
                 });
+
                 if (!elem) {
                     throw new entityErrors.EntityNotFoundError(
                         i18n.__('entity not found', `${this.getModelName()} ${id}`),
                     );
                 }
 
-                // Obtener los IDs de los elementos relacionados
                 const relatedIds = elem[assoc.as].map((relElem) => relElem.id);
 
-                return relatedIds; // Devuelve solo los IDs relacionados
+                return relatedIds;
             } catch (error) {
                 logger.error(i18n.__('generic error', error.toString()));
                 throw error;
