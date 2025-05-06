@@ -1,6 +1,6 @@
-const { segment, location, segmentLocation } = models;
+const { segment } = models;
 const LocationsService = require('./locations-service'); //DUDA: ¿por qué no se importa desde helpers?
-const { CRUDService } = helpers;
+const { CRUDService, entityErrors } = helpers;
 const { calcularRuta, obtenerDetalleRuta } = require('../helpers/api-inegi');
 const NodeCache = require('node-cache');
 class SegmentsService extends CRUDService {
@@ -9,20 +9,32 @@ class SegmentsService extends CRUDService {
         this.cache = new NodeCache({ stdTTL: 3600 });
     }
 
-    async calculateSegment(optimalRoute = true, tollRoute = true, freeRoute = true, originId, destinationId) {
+    async calculateSegment(
+        optimalRoute = true,
+        tollRoute = true,
+        freeRoute = true,
+        originId,
+        destinationId,
+        isFirst,
+        segmentId,
+    ) {
         const origin = await LocationsService.readById(originId);
         const destination = await LocationsService.readById(destinationId);
 
+        if (originId === destinationId) {
+            throw new entityErrors.GenericError('El origen y el destino no pueden ser iguales.');
+        }
+
         if (!origin || !destination) {
-            throw new Error('Origen o destino no encontrados.');
+            throw new entityErrors.GenericError('Origen o destino no encontrados.');
         }
 
         if (!origin.routingLineId || !origin.routingSourceId || !origin.routingTargetId) {
-            throw new Error('Los datos de origen son incompletos.');
+            throw new entityErrors.GenericError('Los datos de origen son incompletos.');
         }
 
         if (!destination.routingLineId || !destination.routingSourceId || !destination.routingTargetId) {
-            throw new Error('Los datos de destino son incompletos.');
+            throw new entityErrors.GenericError('Los datos de destino son incompletos.');
         }
 
         const parametros = {
@@ -114,7 +126,6 @@ class SegmentsService extends CRUDService {
                 }
             }
         });
-
         const formattedRoutes = Object.keys(rutas).reduce((acc, key) => {
             const detail = detalles[key];
             if (detail) {
@@ -131,6 +142,27 @@ class SegmentsService extends CRUDService {
             }
             return acc;
         }, {});
+
+        //logger.info(`122 Rutas calculadas: ${JSON.stringify(formattedRoutes)}`);
+
+        if (Object.keys(formattedRoutes).length === 0) {
+            throw new entityErrors.GenericError(
+                'No se encontraron rutas disponibles. Verifique los datos de origen y destino.',
+            );
+        }
+
+        if (isFirst && segmentId && formattedRoutes.optimalRoute) {
+            const { km, tollBoothsAmount } = formattedRoutes.optimalRoute;
+            await segment.update(
+                {
+                    kms: km,
+                    tollBoothsAmount: tollBoothsAmount,
+                },
+                {
+                    where: { id: segmentId, active: true },
+                },
+            );
+        }
 
         return formattedRoutes;
     }

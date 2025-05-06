@@ -13,6 +13,8 @@ class SegmentValidator extends CRUDValidator {
                 freeRoute: Joi.boolean().optional(),
                 originId: Joi.number().required(),
                 destinationId: Joi.number().required(),
+                isFirst: Joi.boolean().optional(),
+                segmentId: Joi.number().optional(),
             }),
         );
     }

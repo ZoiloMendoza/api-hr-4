@@ -7,19 +7,15 @@ class SegmentsController extends CRUDController {
         this.addRoute('post', '/calculate-segment', async (req, res) => {
             logger.info('Calculando ruta');
             try {
-                const {
-                    optimalRoute,
-                    tollRoute,
-                    freeRoute,
-                    originId,
-                    destinationId,
-                } = req.input;
+                const { optimalRoute, tollRoute, freeRoute, originId, destinationId, isFirst, segmentId } = req.input;
                 const response = await this.service.calculateSegment(
                     optimalRoute,
                     tollRoute,
                     freeRoute,
                     originId,
                     destinationId,
+                    isFirst,
+                    segmentId,
                 );
                 res.json(response);
             } catch (error) {

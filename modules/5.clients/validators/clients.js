@@ -1,6 +1,5 @@
 const { CRUDValidator, joyLibrary } = helpers;
 const { client } = models;
-
 const Joi = require('joi');
 class ClientValidator extends CRUDValidator {
     constructor() {
@@ -15,11 +14,7 @@ class ClientValidator extends CRUDValidator {
         this.addFieldValidation('rfc', joyLibrary.rfcValidator);
         this.addSchema('put', '/client/:id/addresses', addressesSchema);
         this.addSchema('put', '/client/:id/address/:addressId', addressSchema);
-        this.addSchema(
-            'delete',
-            '/client/:id/address/:addressId',
-            Joi.object({}),
-        );
+        this.addSchema('delete', '/client/:id/address/:addressId', Joi.object({}));
         this.addSchema('post', '/client/:id/address', addressSchema);
         this.addSchema('get', '/client/:id/addresses', Joi.object({}));
     }
