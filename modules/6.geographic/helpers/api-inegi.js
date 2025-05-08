@@ -60,7 +60,7 @@ async function makeRequest(endpoint, parametros) {
         const jsonResponse = response.data;
 
         if (jsonResponse.response && jsonResponse.response.success) {
-            logger.info(`ZOY API INEGI: ${JSON.stringify(jsonResponse.response)}`);
+            logger.info(`API INEGI: ${JSON.stringify(jsonResponse.response)}`);
 
             if (!jsonResponse.data || Object.keys(jsonResponse.data).length === 0) {
                 throw new entityErrors.GenericError('La API de INEGI no encontro la información.');

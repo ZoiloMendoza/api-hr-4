@@ -17,6 +17,18 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'userId',
                 as: 'user',
             });
+            Employee.belongsTo(models.employeetype, {
+                foreignKey: 'employeeTypeId',
+                as: 'employeeType',
+            });
+            Employee.belongsTo(models.paymenttype, {
+                foreignKey: 'paymentTypeId',
+                as: 'paymentType',
+            });
+            Employee.hasOne(models.operator, {
+                foreignKey: 'employeeId',
+                as: 'operator',
+            });
         }
     }
 
@@ -44,23 +56,20 @@ module.exports = (sequelize, DataTypes) => {
                 type: new CrudJsonType(models.address, true),
                 validate: {
                     isValidAddressesArray(value) {
-                        const validatorSchema = Joi.array().items(
-                            validators.address.schema,
-                        );
+                        const validatorSchema = Joi.array().items(validators.address.schema);
 
                         const { error } = validatorSchema.validate(value, {
                             abortEarly: false,
                         });
                         if (error) {
-                            throw new Error(
-                                `Address validation failed: ${error.message}`,
-                            );
+                            throw new Error(`Address validation failed: ${error.message}`);
                         }
                     },
                 },
                 defaultValue: [],
             },
             type: {
+                //SE VA A ELIMINAR
                 type: DataTypes.STRING,
                 allowNull: false,
                 validate: {
@@ -69,6 +78,36 @@ module.exports = (sequelize, DataTypes) => {
                         msg: 'Type must be either "operator" or "operations"',
                     },
                 },
+            },
+            employeeTypeId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'EmployeeTypes',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'RESTRICT',
+            },
+            paymentTypeId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'PaymentTypes',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'RESTRICT',
+            },
+            salary: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0.0,
+            },
+            commission: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0.0,
             },
             userId: {
                 type: DataTypes.INTEGER,
