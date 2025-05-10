@@ -41,12 +41,17 @@ class CRUDController extends BaseController {
         const methodNamePUT = `assign${this.capitalize(otherModelName)}`; //FIX
         const methodNameDELETE = `remove${this.capitalize(otherModelName)}`; //FIX
         const methodNameGET = `related${this.capitalize(otherModelName)}`; //FIX
+        const methodNameGETList = `related${otherModelName}list`;
 
         let multiple = relation.associationType === 'BelongsToMany' || relation.associationType === 'HasMany';
         let validator = new SequelizeValidator(OtherModel, fields, multiple);
+
         this.validateRoute('put', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
         this.validateRoute('delete', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
         this.validateRoute('get', `/${this.modelName}/:id/${otherModelName}/unrelated`, (req, res, next) => {
+            next();
+        });
+        this.validateRoute('get', `/${this.modelName}/:id/${otherModelName}/list`, (req, res, next) => {
             next();
         });
 
@@ -125,6 +130,19 @@ class CRUDController extends BaseController {
                 return this.throwError(error, req, res);
             }
         });
+        if (relation.associationType === 'HasMany') {
+            this.addRoute('get', `/${this.modelName}/:id/${otherModelName}/list`, async (req, res) => {
+                logger.info(`Querying related ${otherModelName} for ${this.modelName} ${req.params.id}`);
+                const id = req.params.id;
+                try {
+                    logger.info(`158 Adding method related${otherModelName}list`);
+                    const relatedList = await this.service[methodNameGETList](id);
+                    return res.json(relatedList);
+                } catch (error) {
+                    return this.throwError(error, req, res);
+                }
+            });
+        }
     }
 
     addGet() {

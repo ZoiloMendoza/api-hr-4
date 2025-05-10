@@ -28,7 +28,9 @@ class CRUDService extends BaseService {
 
     addRelation(OtherModel, fields) {
         const otherModelName = Utils.pluralize(OtherModel.name);
+
         logger.info(`Adding relation from ${this.model.name} to ${otherModelName}`);
+
         if (this.relations[otherModelName]) {
             throw new Error('Relation already added');
         }
@@ -47,6 +49,10 @@ class CRUDService extends BaseService {
 
                         logger.info(`Adding method related${otherModelName}`);
                         this[`related${otherModelName}`] = this.getRelatedIds(OtherModel);
+                        return association;
+                    case 'HasMany':
+                        logger.info(`160 Adding method related${otherModelName.toLowerCase()}list`);
+                        this[`related${otherModelName.toLowerCase()}list`] = this.getRelatedList(OtherModel);
                         return association;
                     default:
                         throw new Error('Relation not supported');
@@ -477,6 +483,50 @@ class CRUDService extends BaseService {
                 const relatedIds = elem[assoc.as].map((relElem) => relElem.id);
 
                 return relatedIds;
+            } catch (error) {
+                logger.error(i18n.__('generic error', error.toString()));
+                throw error;
+            }
+        };
+
+        return result;
+    }
+
+    getRelatedList(relatedModel) {
+        const assoc = Object.values(this.model.associations).find(
+            (a) => a.target === relatedModel || a.as === relatedModel.name.toLowerCase(),
+        );
+
+        if (!assoc) {
+            throw new Error(`No association found for ${relatedModel.name}`);
+        }
+
+        logger.info(`234  assoc.as  ${assoc.as}`);
+
+        let result = async (id) => {
+            const loggedUser = this.getLoggedUser();
+            const whereM = { id: id, active: true };
+            if (this.hasCompany) {
+                whereM.companyId = loggedUser.company.id;
+            }
+            try {
+                const elem = await this.model.findOne({
+                    include: [
+                        {
+                            model: relatedModel,
+                            as: assoc.as,
+                            attributes: ['id', 'name'],
+                        },
+                    ],
+                });
+
+                if (!elem) {
+                    throw new entityErrors.EntityNotFoundError(
+                        i18n.__('entity not found', `${this.getModelName()} ${id}`),
+                    );
+                }
+
+                return elem[assoc.as];
             } catch (error) {
                 logger.error(i18n.__('generic error', error.toString()));
                 throw error;
