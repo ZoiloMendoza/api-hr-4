@@ -4,7 +4,7 @@ const { CRUDController } = helpers;
 class EmployeetypesController extends CRUDController {
     constructor() {
         super(employeetype);
-        this.addRelation(paymenttype, ['id']);
+        this.addRelation(paymenttype, ['id'], 'employeeTypeId');
     }
 }
 

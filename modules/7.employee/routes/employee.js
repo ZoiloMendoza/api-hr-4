@@ -1,10 +1,10 @@
-const { employee } = models;
+const { employee, operator } = models;
 const { CRUDController, SearchResult, entityErrors } = helpers;
 
 class EmployeesController extends CRUDController {
     constructor() {
         super(employee);
-
+        this.addRelation(operator, ['id'], 'employeeId');
         this.addRoute('post', '/employee/:id/address', async (req, res) => {
             logger.info(`Adding a new address for employee ${req.params.id}`);
             try {

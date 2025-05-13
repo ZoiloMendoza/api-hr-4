@@ -41,6 +41,11 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: 'CASCADE',
                 onDelete: 'SET NULL',
             },
+            efficiencyKmPerLiter: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: null,
+            },
             active: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,

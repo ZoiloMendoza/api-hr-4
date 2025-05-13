@@ -68,17 +68,17 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 defaultValue: [],
             },
-            type: {
-                //SE VA A ELIMINAR
-                type: DataTypes.STRING,
-                allowNull: false,
-                validate: {
-                    isIn: {
-                        args: [['operator', 'operations']],
-                        msg: 'Type must be either "operator" or "operations"',
-                    },
-                },
-            },
+            // type: {
+            //     //SE VA A ELIMINAR
+            //     type: DataTypes.STRING,
+            //     allowNull: false,
+            //     validate: {
+            //         isIn: {
+            //             args: [['operator', 'operations']],
+            //             msg: 'Type must be either "operator" or "operations"',
+            //         },
+            //     },
+            // },
             employeeTypeId: {
                 type: DataTypes.INTEGER,
                 allowNull: true,

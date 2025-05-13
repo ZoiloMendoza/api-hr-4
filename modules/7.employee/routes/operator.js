@@ -1,9 +1,10 @@
-const { operator } = models;
+const { operator, employee } = models;
 const { CRUDController } = helpers;
 
 class OperatorsController extends CRUDController {
     constructor() {
         super(operator);
+        this.addRelation(employee, ['id'], 'employeeId');
     }
 }
 

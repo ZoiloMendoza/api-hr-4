@@ -51,8 +51,13 @@ class CRUDService extends BaseService {
                         this[`related${otherModelName}`] = this.getRelatedIds(OtherModel);
                         return association;
                     case 'HasMany':
+                    case 'HasOne':
                         logger.info(`160 Adding method related${otherModelName.toLowerCase()}list`);
                         this[`related${otherModelName.toLowerCase()}list`] = this.getRelatedList(OtherModel);
+                        return association;
+                    case 'BelongsTo':
+                        logger.info(`Adding method related${otherModelName}`);
+                        this[`related${otherModelName}Entity`] = this.getRelatedEntity(OtherModel);
                         return association;
                     default:
                         throw new Error('Relation not supported');
@@ -496,7 +501,6 @@ class CRUDService extends BaseService {
         const assoc = Object.values(this.model.associations).find(
             (a) => a.target === relatedModel || a.as === relatedModel.name.toLowerCase(),
         );
-
         if (!assoc) {
             throw new Error(`No association found for ${relatedModel.name}`);
         }
@@ -527,6 +531,48 @@ class CRUDService extends BaseService {
                 }
 
                 return elem[assoc.as];
+            } catch (error) {
+                logger.error(i18n.__('generic error', error.toString()));
+                throw error;
+            }
+        };
+
+        return result;
+    }
+
+    getRelatedEntity(relatedModel) {
+        const assoc = Object.values(this.model.associations).find((a) => a.target === relatedModel);
+
+        if (!assoc) {
+            throw new Error(`No association found for ${relatedModel.name}`);
+        }
+
+        let result = async (id) => {
+            const loggedUser = this.getLoggedUser();
+            const whereM = { id: id, active: true };
+            if (this.hasCompany) {
+                whereM.companyId = loggedUser.company.id;
+            }
+            try {
+                const elem = await this.model.findOne({
+                    where: whereM,
+                    attributes: { exclude: ['active', 'createdAt', 'updatedAt'] }, // Excluye atributos no deseados de la entidad principal
+                    include: [
+                        {
+                            model: relatedModel,
+                            as: assoc.as,
+                            attributes: { exclude: ['active', 'createdAt', 'updatedAt'] }, // Excluye atributos no deseados de la entidad relacionada
+                        },
+                    ],
+                });
+
+                if (!elem) {
+                    throw new entityErrors.EntityNotFoundError(
+                        i18n.__('entity not found', `${this.getModelName()} ${id}`),
+                    );
+                }
+
+                return elem;
             } catch (error) {
                 logger.error(i18n.__('generic error', error.toString()));
                 throw error;
