@@ -28,6 +28,7 @@ class CRUDService extends BaseService {
 
     addRelation(OtherModel, fields) {
         const otherModelName = Utils.pluralize(OtherModel.name);
+        const otherModelNameSingular = OtherModel.name;
 
         logger.info(`Adding relation from ${this.model.name} to ${otherModelName}`);
 
@@ -40,27 +41,33 @@ class CRUDService extends BaseService {
 
                 logger.info(`Relation found: ${association.associationType}`);
                 switch (association.associationType) {
-                    case 'BelongsToMany':
+                    case 'BelongsToMany': //Relacion de Muchos a Muchos
                         logger.info(`Adding method assign${otherModelName}`);
                         this[`assign${otherModelName}`] = this.getAddRelatedList(OtherModel, fields);
-
                         logger.info(`Adding method remove${otherModelName}`);
                         this[`remove${otherModelName}`] = this.getRemoveRelatedList(OtherModel, fields);
-
                         logger.info(`Adding method related${otherModelName}`);
-                        this[`related${otherModelName}`] = this.getRelatedIds(OtherModel);
+                        this[`related${otherModelName}ids`] = this.getRelatedIds(OtherModel);
                         return association;
-                    case 'HasMany':
-                    case 'HasOne':
-                        logger.info(`160 Adding method related${otherModelName.toLowerCase()}list`);
-                        this[`related${otherModelName.toLowerCase()}list`] = this.getRelatedList(OtherModel);
+                    // case 'HasMany': //Relacion de Uno a Muchos
+                    // // Listado paginado de hijos
+                    // this[`related${otherModelNameSingular}list`] = this.getRelatedList(OtherModel);      // GET /A/:id/B        → lista de B filtrados por A
+                    // // Detalle de un hijo específico, validando pertenencia al padre
+                    // this[`related${otherModelNameSingular}byid`] = this.getRelatedDetail(OtherModel);    // GET /A/:id/B/:childId → detalle de B si pertenece a A
+                    //return association;
+                    case 'HasOne': //Relacion de Uno a Uno
+                        // Obtener entidad única asociada al padre
+                        this[`related${otherModelNameSingular}entity`] = this.getRelatedEntity(OtherModel); // GET /A/:id/B → B único asociado
                         return association;
-                    case 'BelongsTo':
+                    // logger.info(`160 Adding method related${otherModelName.toLowerCase()}list`);
+                    // this[`related${otherModelName.toLowerCase()}list`] = this.getRelatedList(OtherModel);
+                    // return association;
+                    case 'BelongsTo': //Relacion de Muchos a Uno
                         logger.info(`Adding method related${otherModelName}`);
-                        this[`related${otherModelName}Entity`] = this.getRelatedEntity(OtherModel);
+                        this[`related${otherModelName}entity`] = this.getRelatedEntity(OtherModel); // GET /A/:id/B → padre único
                         return association;
                     default:
-                        throw new Error('Relation not supported');
+                        throw new Error('Relation not supported' + association.associationType);
                 }
             }
         }
@@ -155,6 +162,37 @@ class CRUDService extends BaseService {
         } catch (error) {
             logger.debug(error);
             throw error;
+        }
+    }
+
+    async findAndCountAllWithInclude(options = {}) {
+        const loggedUser = this.getLoggedUser();
+        // 1) traducir f a where
+        let f = options.filter || {};
+        let translation = translateAST(f, this.model);
+
+        // 2) construir donde
+        const where = { ...translation.where };
+        if (this.hasCompany) {
+            where.companyId = loggedUser.company.id;
+        }
+
+        // 3) construir opciones de Sequelize
+        const findOpts = {
+            where,
+            include: options.include || [],      // <-- preserva el include
+            offset: options.offset,
+            limit: options.limit,
+            order: options.order,
+        };
+
+        try {
+            const records = await this.model.findAndCountAll(findOpts);
+            records.rows = records.rows.map(item => this.toJson(item));
+            return records;
+        } catch (err) {
+            logger.debug(err);
+            throw err;
         }
     }
 
@@ -556,12 +594,12 @@ class CRUDService extends BaseService {
             try {
                 const elem = await this.model.findOne({
                     where: whereM,
-                    attributes: { exclude: ['active', 'createdAt', 'updatedAt'] }, // Excluye atributos no deseados de la entidad principal
+                    attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] }, // Excluye atributos no deseados de la entidad principal
                     include: [
                         {
                             model: relatedModel,
                             as: assoc.as,
-                            attributes: { exclude: ['active', 'createdAt', 'updatedAt'] }, // Excluye atributos no deseados de la entidad relacionada
+                            attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] }, // Excluye atributos no deseados de la entidad relacionada
                         },
                     ],
                 });
@@ -581,6 +619,8 @@ class CRUDService extends BaseService {
 
         return result;
     }
+
+
 }
 
 module.exports = CRUDService;
