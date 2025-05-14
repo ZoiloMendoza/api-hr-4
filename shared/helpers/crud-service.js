@@ -49,22 +49,15 @@ class CRUDService extends BaseService {
                         logger.info(`Adding method related${otherModelName}`);
                         this[`related${otherModelName}ids`] = this.getRelatedIds(OtherModel);
                         return association;
-                    // case 'HasMany': //Relacion de Uno a Muchos
-                    // // Listado paginado de hijos
-                    // this[`related${otherModelNameSingular}list`] = this.getRelatedList(OtherModel);      // GET /A/:id/B        → lista de B filtrados por A
-                    // // Detalle de un hijo específico, validando pertenencia al padre
-                    // this[`related${otherModelNameSingular}byid`] = this.getRelatedDetail(OtherModel);    // GET /A/:id/B/:childId → detalle de B si pertenece a A
-                    //return association;
                     case 'HasOne': //Relacion de Uno a Uno
-                        // Obtener entidad única asociada al padre
-                        this[`related${otherModelNameSingular}entity`] = this.getRelatedEntity(OtherModel); // GET /A/:id/B → B único asociado
+                        this[`related${otherModelNameSingular}entity`] = this.getRelatedEntity(OtherModel);
                         return association;
-                    // logger.info(`160 Adding method related${otherModelName.toLowerCase()}list`);
-                    // this[`related${otherModelName.toLowerCase()}list`] = this.getRelatedList(OtherModel);
-                    // return association;
                     case 'BelongsTo': //Relacion de Muchos a Uno
                         logger.info(`Adding method related${otherModelName}`);
-                        this[`related${otherModelName}entity`] = this.getRelatedEntity(OtherModel); // GET /A/:id/B → padre único
+                        this[`related${otherModelName}entity`] = this.getRelatedEntity(OtherModel);
+                        return association;
+                    case 'HasMany': //Relacion de Uno a Muchos
+                        this[`related${otherModelNameSingular}list`] = this.getRelatedList(OtherModel);
                         return association;
                     default:
                         throw new Error('Relation not supported' + association.associationType);
@@ -167,20 +160,18 @@ class CRUDService extends BaseService {
 
     async findAndCountAllWithInclude(options = {}) {
         const loggedUser = this.getLoggedUser();
-        // 1) traducir f a where
+
         let f = options.filter || {};
         let translation = translateAST(f, this.model);
 
-        // 2) construir donde
         const where = { ...translation.where };
         if (this.hasCompany) {
             where.companyId = loggedUser.company.id;
         }
 
-        // 3) construir opciones de Sequelize
         const findOpts = {
             where,
-            include: options.include || [],      // <-- preserva el include
+            include: options.include || [],
             offset: options.offset,
             limit: options.limit,
             order: options.order,
@@ -188,7 +179,7 @@ class CRUDService extends BaseService {
 
         try {
             const records = await this.model.findAndCountAll(findOpts);
-            records.rows = records.rows.map(item => this.toJson(item));
+            records.rows = records.rows.map((item) => this.toJson(item));
             return records;
         } catch (err) {
             logger.debug(err);
@@ -552,12 +543,17 @@ class CRUDService extends BaseService {
                 whereM.companyId = loggedUser.company.id;
             }
             try {
+                const whereCondition = {
+                    active: true,
+                };
                 const elem = await this.model.findOne({
+                    where: whereM,
                     include: [
                         {
                             model: relatedModel,
                             as: assoc.as,
                             attributes: ['id', 'name'],
+                            where: whereCondition,
                         },
                     ],
                 });
@@ -619,8 +615,6 @@ class CRUDService extends BaseService {
 
         return result;
     }
-
-
 }
 
 module.exports = CRUDService;

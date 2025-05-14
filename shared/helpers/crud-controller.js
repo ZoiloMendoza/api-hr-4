@@ -34,50 +34,49 @@ class CRUDController extends BaseController {
     }
 
     addRelation(OtherModel, fields, fieldRelation = null) {
-        //create validator for fields
         const relation = this.service.addRelation(OtherModel, fields);
         const otherModelName = Utils.pluralize(OtherModel.name.toLowerCase());
         const otherNamePlural = Utils.pluralize(OtherModel.name.toLowerCase());
-        const otherNameSingular = OtherModel.name.toLowerCase();
+        const otherNameSingular = OtherModel.name;
 
         const methodNamePUT = `assign${this.capitalize(otherModelName)}`; //FIX
         const methodNameDELETE = `remove${this.capitalize(otherModelName)}`; //FIX
         const methodNameGET = `related${this.capitalize(otherModelName)}ids`; //FIX
-        // const methodNameGETList = `related${otherModelName}list`;
+        const methodNameGETList = `related${otherNameSingular}list`;
         const methodNameGETEntity = `related${this.capitalize(otherModelName)}entity`; //FIX
-
-        // const listMethod = `related${this.capitalize(otherNameSingular)}List`;
-        // const detailMethod = `related${this.capitalize(otherNameSingular)}Detail`;
-        // const entityMethod = `related${this.capitalize(otherNameSingular)}entity`;
-        // const idsMethod = `related${this.capitalize(otherNamePlural)}Ids`;
-        // const addMethod = `assign${this.capitalize(otherNamePlural)}`;
-        // const removeMethod = `remove${this.capitalize(otherNamePlural)}`;
 
         let multiple = relation.associationType === 'BelongsToMany' || relation.associationType === 'HasMany';
         let validator = new SequelizeValidator(OtherModel, fields, multiple);
 
         switch (relation.associationType) {
-            case 'HasMany':
-                // // GET /model/:id/other — lista
-                // this.validateRoute('get', `/${this.modelName}/:id/${otherNamePlural}`, (req, res, next) => next());
-                // this.addRoute('get', `/${this.modelName}/:id/${otherNamePlural}`, async (req, res) => {
-                //     const { id } = req.params;
-                //     const data = await this.service[listMethod](id, {
-                //         offset: req.query.start,
-                //         limit: req.query.limit,a
-                //         where: req.query.filter
-                //     });
-                //     return res.json(data);
-                // });
-                // // GET /model/:id/other/:childId — detalle
-                // this.validateRoute('get', `/${this.modelName}/:id/${otherNamePlural}/:childId`, (req, res, next) => next());
-                // this.addRoute('get', `/${this.modelName}/:id/${otherNamePlural}/:childId`, async (req, res) => {
-                //     const { id, childId } = req.params;
-                //     const data = await this.service[detailMethod](id, childId);
-                //     return res.json(data);
-                // });
-                break;
+            case 'HasMany': // Relación de Uno a Muchos
+                this.validateRoute(
+                    'get',
+                    `/${this.modelName}s/:id/${otherNameSingular.toLowerCase()}`,
+                    (req, res, next) => {
+                        const { id } = req.params;
 
+                        if (!id || isNaN(id) || parseInt(id) <= 0) {
+                            return res.status(400).json([req.__('Invalid ID format')]);
+                        }
+
+                        next();
+                    },
+                );
+                this.addRoute('get', `/${this.modelName}s/:id/${otherNameSingular.toLowerCase()}`, async (req, res) => {
+                    const { id } = req.params;
+
+                    const data = await this.service[methodNameGETList](id);
+                    if (!data || data.length === 0) {
+                        return res.status(404).json([req.__('No hay elementos relacionados')]);
+                    }
+                    const start = 1;
+                    const limit = 100;
+                    const total = data.length;
+
+                    return res.json(new SearchResult(data, start, limit, total));
+                });
+                break;
             case 'HasOne': //Relacion de Uno a Uno
                 this.validateRoute('get', `/${this.modelName}s/${otherNamePlural}`, (req, res, next) => next());
                 this.addRoute('get', `/${this.modelName}s/${otherNamePlural}`, async (req, res) => {
@@ -92,8 +91,7 @@ class CRUDController extends BaseController {
                         return res.status(400).json();
                     }
 
-                    const assoc = Object.values(this.model.associations)
-                        .find(a => a.target === OtherModel);
+                    const assoc = Object.values(this.model.associations).find((a) => a.target === OtherModel);
                     if (!assoc) {
                         return res.status(400).json([req.__('No association found for the related model')]);
                     }
@@ -102,8 +100,11 @@ class CRUDController extends BaseController {
                         model: OtherModel,
                         as: assoc.as,
                         attributes: { exclude: ['active', 'createdAt', 'updatedAt'] },
-                        where: { active: true },
-                        required: false
+                        where: {
+                            active: true,
+                            [assoc.foreignKey]: { [Op.ne]: null },
+                        },
+                        required: true,
                     };
 
                     try {
@@ -112,32 +113,36 @@ class CRUDController extends BaseController {
                             offset: q.start,
                             limit: q.limit,
                             order: [[q.orderBy, q.order]],
-                            filter: q.filter
+                            filter: q.filter,
                         });
 
                         if (!rows.length) {
                             return res.status(404).json([req.__('No hay elementos relacionados')]);
                         }
 
-                        const data = rows.map(emp => {
+                        const data = rows.map((emp) => {
                             const opData = emp[assoc.as];
                             const empData = { ...emp };
                             delete empData[assoc.as];
                             return {
                                 ...empData,
-                                [assoc.as]: opData
+                                [assoc.as]: opData,
                             };
                         });
                         return res.json(new SearchResult(data, q.start + 1, q.limit, count));
                     } catch (error) {
                         return this.throwError(error, req, res);
                     }
-
-                })
+                });
                 break;
             case 'BelongsTo':
-
                 this.validateRoute('get', `/${this.modelName}/:id/${otherNameSingular}`, (req, res, next) => {
+                    const { id } = req.params;
+
+                    if (!id || isNaN(id) || parseInt(id) <= 0) {
+                        return res.status(400).json([req.__('Invalid ID format')]);
+                    }
+
                     next();
                 });
                 this.addRoute('get', `/${this.modelName}/:id/${otherNameSingular}`, async (req, res) => {
@@ -168,48 +173,44 @@ class CRUDController extends BaseController {
                         return res.status(400).json();
                     }
 
-                    // 3) Encontrar la asociación Operator.belongsTo(Employee)
-                    const assoc = Object.values(this.service.model.associations)
-                        .find(a => a.target.name.toLowerCase() === OtherModel.name.toLowerCase());
+                    const assoc = Object.values(this.service.model.associations).find(
+                        (a) => a.target.name.toLowerCase() === OtherModel.name.toLowerCase(),
+                    );
                     if (!assoc) {
                         return res.status(400).json([req.__('No association found')]);
                     }
 
-                    // 4) Configurar include para Sequelize
                     const includeOpts = {
                         model: OtherModel,
                         as: assoc.as,
                         attributes: { exclude: ['active', 'createdAt', 'updatedAt'] },
                         where: { active: true },
-                        required: false
+                        required: false,
                     };
 
                     try {
-                        // 5) Llamar al service de Operator con include + filter + paginación
                         const { rows, count } = await this.service.findAndCountAllWithInclude({
                             include: [includeOpts],
                             offset: q.start,
                             limit: q.limit,
                             order: [[q.orderBy, q.order]],
-                            filter: q.filter
+                            filter: q.filter,
                         });
 
                         if (!rows.length) {
                             return res.status(404).json([req.__('No hay operadores')]);
                         }
 
-                        // 6) Aplanar respuesta: Operator al root, Employee en 'employee'
-                        const data = rows.map(op => {
-                            const empData = op[assoc.as];    // ya es plain object
+                        const data = rows.map((op) => {
+                            const empData = op[assoc.as];
                             const opData = { ...op };
                             delete opData[assoc.as];
                             return {
                                 ...opData,
-                                [assoc.as]: empData
+                                [assoc.as]: empData,
                             };
                         });
 
-                        // 7) Devolver paginación igual que addGet
                         return res.json(new SearchResult(data, q.start + 1, q.limit, count));
                     } catch (err) {
                         return this.throwError(err, req, res);
@@ -220,6 +221,12 @@ class CRUDController extends BaseController {
                 this.validateRoute('put', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
                 this.validateRoute('delete', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
                 this.validateRoute('get', `/${this.modelName}/:id/${otherModelName}/unrelated`, (req, res, next) => {
+                    const { id } = req.params;
+
+                    if (!id || isNaN(id) || parseInt(id) <= 0) {
+                        return res.status(400).json([req.__('Invalid ID format')]);
+                    }
+
                     next();
                 });
 
@@ -227,7 +234,6 @@ class CRUDController extends BaseController {
                     logger.info(`Adding ${otherModelName} to ${this.modelName} ${req.params.id}`);
                     const id = req.params.id;
                     try {
-                        //ERROR: ej. se enviva assignsegment y esperaba assignSegment
                         const elem = await this.service[methodNamePUT](id, req.input);
                         return res.json(elem);
                     } catch (error) {
@@ -301,155 +307,7 @@ class CRUDController extends BaseController {
                 break;
             default:
                 throw new Error('Relation not supported: ' + relation.associationType);
-
         }
-
-
-        // if (relation.associationType === 'HasMany') {
-        //     this.validateRoute('get', `/${this.modelName}/:id/${otherModelName}/list`, (req, res, next) => {
-        //         next();
-        //     });
-        //     this.addRoute('get', `/${this.modelName}/:id/${otherModelName}/list`, async (req, res) => {
-        //         logger.info(`Querying related ${otherModelName} for ${this.modelName} ${req.params.id}`);
-
-        //         const id = req.params.id;
-        //         this.parser3 = new CRUDParser(OtherModel);
-        //         let q = null;
-        //         try {
-        //             const normalizedQuery = {
-        //                 start: req.query.start || '1',
-        //                 limit: req.query.limit || '100',
-        //                 q: req.query.q || '',
-        //                 order: req.query.order || 'ASC',
-        //                 orderBy: req.query.orderBy || 'id',
-        //             };
-
-        //             q = this.parser3.parse(normalizedQuery);
-        //         } catch (error) {
-        //             return res.status(400).json(req.__('Invalid query'));
-        //         }
-        //         try {
-        //             logger.info(`158 Adding method ${methodNameGETList} - id: ${id}`);
-        //             //cambiar esto
-        //             const whereCondition = {
-        //                 [fieldRelation]: id,
-        //                 active: true,
-        //             };
-
-        //             const relatedItems = await OtherModel.findAll({
-        //                 where: whereCondition,
-        //                 attributes: {
-        //                     exclude: ['active', 'createdAt', 'updatedAt'],
-        //                 },
-        //                 offset: q.start,
-        //                 limit: q.limit,
-        //                 order: [[q.orderBy, q.order]],
-        //             });
-
-        //             if (!relatedItems || relatedItems.length === 0) {
-        //                 return res.status(404).json([req.__('No hay elementos relacionados')]);
-        //             }
-
-        //             return res.json(new SearchResult(relatedItems, q.start + 1, q.limit, relatedItems.length));
-        //         } catch (error) {
-        //             return this.throwError(error, req, res);
-        //         }
-        //     });
-        // }
-
-        // if (relation.associationType === 'HasOne') {
-        //     this.addRoute('get', `/${otherModelName}/${this.modelName}`, async (req, res) => {
-        //         logger.info(`Querying related ${otherModelName} for ${this.modelName} ${req.params.id}`);
-
-        //         const id = req.params.id;
-        //         this.parser4 = new CRUDParser(OtherModel);
-        //         let q = null;
-        //         try {
-        //             const normalizedQuery = {
-        //                 start: req.query.start || '1',
-        //                 limit: req.query.limit || '100',
-        //                 q: req.query.q || '',
-        //                 order: req.query.order || 'ASC',
-        //                 orderBy: req.query.orderBy || 'id',
-        //             };
-
-        //             q = this.parser4.parse(normalizedQuery);
-        //         } catch (error) {
-        //             return res.status(400).json(req.__('Invalid query'));
-        //         }
-        //         try {
-        //             logger.info(`158 Adding method ${methodNameGETList} - id: ${id}`);
-        //             //cambiar esto
-
-        //             const assoc = Object.values(this.model.associations).find(
-        //                 (a) => a.target === OtherModel || a.as === Utils.pluralize(OtherModel.name.toLowerCase()),
-        //             );
-
-        //             if (!assoc) {
-        //                 return res.status(400).json(req.__('No association found for the related model'));
-        //             }
-        //             const relatedData = await this.model.findAll({
-        //                 attributes: {
-        //                     exclude: ['active', 'createdAt', 'updatedAt', 'companyId'],
-        //                 },
-        //                 include: [
-        //                     {
-        //                         model: OtherModel,
-        //                         as: assoc.as,
-        //                         attributes: {
-        //                             exclude: ['active', 'createdAt', 'updatedAt'],
-        //                         },
-        //                         where: { active: true },
-        //                         required: true,
-        //                     },
-        //                 ],
-        //                 offset: q.start,
-        //                 limit: q.limit,
-        //                 order: [[q.orderBy, q.order]],
-        //             });
-
-        //             if (!relatedData || relatedData.length === 0) {
-        //                 return res.status(404).json([req.__('No hay elementos relacionados')]);
-        //             }
-
-        //             const response = relatedData.map((item) => {
-        //                 const otherModelData = item[assoc.as]?.toJSON(); // Convierte OtherModel a un objeto plano
-        //                 const modelNameData = item.toJSON(); // Convierte ModelName a un objeto plano
-
-        //                 if (assoc.as in modelNameData) {
-        //                     delete modelNameData[assoc.as];
-        //                 }
-        //                 return {
-        //                     ...otherModelData, // Incluye los datos de OtherModel en la raíz
-        //                     [this.modelName]: modelNameData, // Anida los datos de ModelName bajo el nombre del modelo principal
-        //                 };
-        //             });
-
-        //             return res.json(new SearchResult(response, q.start + 1, q.limit, response.length));
-        //         } catch (error) {
-        //             return this.throwError(error, req, res);
-        //         }
-        //     });
-        // }
-
-        // if (relation.associationType === 'BelongsTo') {
-        //     this.validateRoute('get', `/${this.modelName}/:id/${otherModelName}`, (req, res, next) => {
-        //         next();
-        //     });
-        //     this.addRoute('get', `/${this.modelName}/:id/${otherModelName}`, async (req, res) => {
-        //         logger.info(`Querying related ${otherModelName} for ${this.modelName} ${req.params.id}`);
-        //         const id = req.params.id;
-        //         try {
-        //             const elem = await this.service[methodNameGETEntity](id);
-        //             return res.json(elem);
-        //         } catch (error) {
-        //             if (error instanceof entityErrors.EntityNotFoundError) {
-        //                 return res.status(404).json([error.message]);
-        //             }
-        //             return res.status(501).json([error.message]);
-        //         }
-        //     });
-        // }
     }
 
     addGet() {
