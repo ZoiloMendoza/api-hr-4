@@ -66,15 +66,26 @@ class CRUDController extends BaseController {
                 this.addRoute('get', `/${this.modelName}s/:id/${otherNameSingular.toLowerCase()}`, async (req, res) => {
                     const { id } = req.params;
 
-                    const data = await this.service[methodNameGETList](id);
-                    if (!data || data.length === 0) {
-                        return res.status(404).json([req.__('No hay elementos relacionados')]);
-                    }
-                    const start = 1;
-                    const limit = 100;
-                    const total = data.length;
+                    try {
+                        const data = await this.service[methodNameGETList](id);
+                        if (!data || data.length === 0) {
+                            return res.status(404).json([req.__('No hay elementos relacionados')]);
+                        }
 
-                    return res.json(new SearchResult(data, start, limit, total));
+                        const start = 1;
+                        const limit = 100;
+                        const total = data.length;
+
+                        return res.json(new SearchResult(data, start, limit, total));
+                    } catch (error) {
+                        if (error instanceof entityErrors.EntityNotFoundError) {
+                            return res.status(404).json([error.message]);
+                        }
+                        if (error instanceof entityErrors.UnauthorizedError) {
+                            return res.status(401).json([error.message]);
+                        }
+                        return res.status(501).json([error.message]);
+                    }
                 });
                 break;
             case 'HasOne': //Relacion de Uno a Uno
@@ -131,7 +142,64 @@ class CRUDController extends BaseController {
                         });
                         return res.json(new SearchResult(data, q.start + 1, q.limit, count));
                     } catch (error) {
-                        return this.throwError(error, req, res);
+                        if (error instanceof entityErrors.EntityNotFoundError) {
+                            return res.status(404).json([error.message]);
+                        }
+                        if (error instanceof entityErrors.UnauthorizedError) {
+                            return res.status(401).json([error.message]);
+                        }
+                        return res.status(501).json([error.message]);
+                    }
+                });
+                this.validateRoute(
+                    'get',
+                    `/${this.modelName}/:id/${otherNameSingular.toLowerCase()}`,
+                    (req, res, next) => {
+                        const { id } = req.params;
+
+                        if (!id || isNaN(id) || parseInt(id) <= 0) {
+                            return res.status(400).json([req.__('Invalid ID format')]);
+                        }
+
+                        next();
+                    },
+                );
+                this.addRoute('get', `/${this.modelName}/:id/${otherNameSingular.toLowerCase()}`, async (req, res) => {
+                    logger.info(`Querying related ${otherNameSingular} for ${this.modelName} ${req.params.id}`);
+                    const { id } = req.params;
+
+                    try {
+                        const assoc = Object.values(this.model.associations).find((a) => a.target === OtherModel);
+                        if (!assoc) {
+                            return res.status(400).json([req.__('No association found for the related model')]);
+                        }
+
+                        const includeOpts = {
+                            model: OtherModel,
+                            as: assoc.as,
+                            attributes: { exclude: ['createdAt', 'updatedAt', 'active'] },
+                            where: {
+                                [assoc.foreignKey]: id,
+                                active: true,
+                            },
+                            required: true,
+                        };
+
+                        const relatedEntity = await OtherModel.findOne(includeOpts);
+
+                        if (!relatedEntity) {
+                            return res.status(404).json([req.__('No hay elementos relacionados')]);
+                        }
+
+                        return res.json(relatedEntity);
+                    } catch (error) {
+                        if (error instanceof entityErrors.EntityNotFoundError) {
+                            return res.status(404).json([error.message]);
+                        }
+                        if (error instanceof entityErrors.UnauthorizedError) {
+                            return res.status(401).json([error.message]);
+                        }
+                        return res.status(501).json([error.message]);
                     }
                 });
                 break;
@@ -154,6 +222,9 @@ class CRUDController extends BaseController {
                     } catch (error) {
                         if (error instanceof entityErrors.EntityNotFoundError) {
                             return res.status(404).json([error.message]);
+                        }
+                        if (error instanceof entityErrors.UnauthorizedError) {
+                            return res.status(401).json([error.message]);
                         }
                         return res.status(501).json([error.message]);
                     }
@@ -183,9 +254,9 @@ class CRUDController extends BaseController {
                     const includeOpts = {
                         model: OtherModel,
                         as: assoc.as,
-                        attributes: { exclude: ['active', 'createdAt', 'updatedAt'] },
+                        attributes: { exclude: ['createdAt', 'updatedAt'] },
                         where: { active: true },
-                        required: false,
+                        required: true,
                     };
 
                     try {
@@ -212,8 +283,14 @@ class CRUDController extends BaseController {
                         });
 
                         return res.json(new SearchResult(data, q.start + 1, q.limit, count));
-                    } catch (err) {
-                        return this.throwError(err, req, res);
+                    } catch (error) {
+                        if (error instanceof entityErrors.EntityNotFoundError) {
+                            return res.status(404).json([error.message]);
+                        }
+                        if (error instanceof entityErrors.UnauthorizedError) {
+                            return res.status(401).json([error.message]);
+                        }
+                        return res.status(501).json([error.message]);
                     }
                 });
                 break;
