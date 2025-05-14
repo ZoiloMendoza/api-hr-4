@@ -294,7 +294,7 @@ class CRUDController extends BaseController {
                     }
                 });
                 break;
-            case 'BelongsToMany':
+            case 'BelongsToMany': // Relación de Muchos a Muchos
                 this.validateRoute('put', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
                 this.validateRoute('delete', `/${this.modelName}/:id/${otherModelName}`, validator.genValidator());
                 this.validateRoute('get', `/${this.modelName}/:id/${otherModelName}/unrelated`, (req, res, next) => {

@@ -46,6 +46,16 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 defaultValue: null,
             },
+            vehicleYear: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                defaultValue: null,
+            },
+            vehicleDescription: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: null,
+            },
             active: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
