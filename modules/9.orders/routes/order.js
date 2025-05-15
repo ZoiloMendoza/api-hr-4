@@ -1,9 +1,10 @@
-const { order } = models;
+const { order, client } = models;
 const { CRUDController } = helpers;
 
 class OrdersController extends CRUDController {
     constructor() {
         super(order);
+        this.addRelation(client, ['id']);
     }
 }
 
