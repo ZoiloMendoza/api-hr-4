@@ -1,4 +1,4 @@
-const {CrudJsonType} = helpers;
+const { CrudJsonType } = helpers;
 const Joi = require('joi');
 
 module.exports = (sequelize, DataTypes) => {
@@ -16,6 +16,10 @@ module.exports = (sequelize, DataTypes) => {
             Client.hasMany(models.user, {
                 foreignKey: 'clientId',
                 as: 'users',
+            });
+            Client.hasMany(models.order, {
+                foreignKey: 'clientId',
+                as: 'orders',
             });
         }
     }
@@ -41,13 +45,12 @@ module.exports = (sequelize, DataTypes) => {
 
                         const { error } = validatorSchema.validate(value, { abortEarly: false });
                         if (error) {
-                          throw new Error(`Address validation failed: ${error.message}`);
+                            throw new Error(`Address validation failed: ${error.message}`);
                         }
-                
-                     }
+                    },
                 },
-                defaultValue: []
-            },            
+                defaultValue: [],
+            },
             active: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,
