@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'serviceId',
                 as: 'service',
             });
+
+            Order.hasMany(models.productorder, {
+                foreignKey: 'orderId',
+                as: 'productsOrders',
+            });
         }
     }
 
@@ -91,6 +96,12 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
                 comment: 'Descripción del servicio',
+            },
+            freightCost: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0.0,
+                comment: 'Costo del flete en pesos mexicanos',
             },
             active: {
                 type: DataTypes.BOOLEAN,

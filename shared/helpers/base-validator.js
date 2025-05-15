@@ -52,21 +52,25 @@ class BaseValidator {
     }
 
     genPutValidator(schema = null) {
-        //SE AGREGO PARA SER MÁS FLEXIBLE
+        // REVISAR validator
         return async (req, res, next) => {
-            const fieldsToValidate = Object.keys(req.body);
-
             const sc = schema || this.schema;
-            const schemaForPut = sc.fork(Object.keys(sc.describe().keys), (field) => field.optional());
-            const schemaForRequest = schemaForPut.fork(fieldsToValidate, (field) => field.optional());
 
-            const { error, value } = schemaForRequest.validate(req.body, {
+            if (!sc || typeof sc.describe !== 'function' || !sc.describe().keys) {
+                return res.status(400).json({ error: 'claves no validas.' });
+            }
+
+            const schemaForPut = sc.fork(Object.keys(sc.describe().keys), (field) => field.optional());
+
+            const { error, value } = schemaForPut.validate(req.body, {
                 abortEarly: false,
+                stripUnknown: true,
             });
 
             if (error) {
                 return res.status(400).json(error.details.map((detail) => detail.message));
             }
+
             req.input = value;
             return next();
         };
