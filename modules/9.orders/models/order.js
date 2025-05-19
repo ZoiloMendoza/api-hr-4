@@ -8,6 +8,16 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'client',
             });
 
+            Order.belongsTo(models.client, {
+                foreignKey: 'originClientId',
+                as: 'originClient',
+            });
+
+            Order.belongsTo(models.client, {
+                foreignKey: 'destinationClientId',
+                as: 'destinationClient',
+            });
+
             Order.belongsTo(models.catalog, {
                 foreignKey: 'serviceId',
                 as: 'service',
@@ -32,6 +42,28 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: 'CASCADE',
                 onDelete: 'RESTRICT',
                 comment: 'Cliente que solicita el servicio',
+            },
+            originClientId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'Clients',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'SET NULL',
+                comment: 'Cliente que proporciona la dirección de origen',
+            },
+            destinationClientId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'Clients',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'SET NULL',
+                comment: 'Cliente que proporciona la dirección de destino',
             },
             serviceId: {
                 type: DataTypes.INTEGER,

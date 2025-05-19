@@ -254,7 +254,7 @@ class CRUDController extends BaseController {
                     const includeOpts = {
                         model: OtherModel,
                         as: assoc.as,
-                        attributes: { exclude: ['createdAt', 'updatedAt'] },
+                        attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] },
                         where: { active: true },
                         required: true,
                     };

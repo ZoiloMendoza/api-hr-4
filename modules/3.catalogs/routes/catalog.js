@@ -24,11 +24,7 @@ class CatalogController extends BaseController {
         this.addRoute('post', '/catalog/:type', this.handlePost.bind(this));
 
         this.addRoute('put', '/catalog/:type/:id', this.handlePut.bind(this));
-        this.addRoute(
-            'delete',
-            '/catalog/:type/:id',
-            this.handleDelete.bind(this),
-        );
+        this.addRoute('delete', '/catalog/:type/:id', this.handleDelete.bind(this));
     }
 
     //List all catalogs
@@ -40,9 +36,7 @@ class CatalogController extends BaseController {
         const filter = this.parser.parse(req.query);
         try {
             const catalogs = await catalogService.getCatalogsAllType(filter);
-            res.json(
-                new SearchResult(catalogs, 1, catalogs.length, catalogs.length),
-            );
+            res.json(new SearchResult(catalogs, 1, catalogs.length, catalogs.length));
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {
                 return res.status(404).json({ errors: [error.message] });
@@ -119,7 +113,7 @@ class CatalogController extends BaseController {
         try {
             const { type, id } = req.params;
             const result = await catalogService.deleteCatalog(type, id);
-            res.status(204).send();
+            res.status(200).json(result);
         } catch (error) {
             if (error instanceof entityErrors.EntityNotFoundError) {
                 return res.status(404).json([error.message]);

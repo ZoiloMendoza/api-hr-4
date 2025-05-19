@@ -575,10 +575,9 @@ class CRUDService extends BaseService {
     }
 
     getRelatedEntity(relatedModel) {
-        const assoc = Object.values(this.model.associations).find((a) => a.target === relatedModel);
-
-        if (!assoc) {
-            throw new Error(`No association found for ${relatedModel.name}`);
+        const assocs = Object.values(this.model.associations).filter((a) => a.target === relatedModel);
+        if (assocs.length === 0) {
+            throw new Error(`No associations found for ${relatedModel.name}`);
         }
 
         let result = async (id) => {
@@ -590,14 +589,12 @@ class CRUDService extends BaseService {
             try {
                 const elem = await this.model.findOne({
                     where: whereM,
-                    attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] }, // Excluye atributos no deseados de la entidad principal
-                    include: [
-                        {
-                            model: relatedModel,
-                            as: assoc.as,
-                            attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] }, // Excluye atributos no deseados de la entidad relacionada
-                        },
-                    ],
+                    attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] },
+                    include: assocs.map((assoc) => ({
+                        model: relatedModel,
+                        as: assoc.as,
+                        attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] },
+                    })),
                 });
 
                 if (!elem) {
