@@ -15,13 +15,30 @@ class VehicleValidator extends CRUDValidator {
                     'any.only': i18n.__('error.vehicle.validation.status.invalid', 'status'),
                 }),
         );
+
+        this.addFieldValidation(
+            'operatorId',
+            Joi.number()
+                .integer()
+                .allow(null)
+                .messages({
+                    'number.base': i18n.__('error.validation.number', 'operatorId'),
+                    'any.required': i18n.__('error.validation.required', 'operatorId'),
+                })
+                .optional(),
+        );
         this.addFieldValidation(
             'vehicleYear',
             Joi.number()
                 .integer()
                 .min(1980)
                 .max(2100)
-                .message('El campo vehicleYear debe ser un número de 4 dígitos (por ejemplo, 2025)')
+                .messages({
+                    'number.base': i18n.__('error.validation.number', 'vehicleYear'),
+                    'number.min': i18n.__('error.vehicle.validation.vehicleYear.min', 'vehicleYear'),
+                    'number.max': i18n.__('error.vehicle.validation.vehicleYear.max', 'vehicleYear'),
+                    'any.required': i18n.__('error.validation.required', 'vehicleYear'),
+                })
                 .optional(),
         );
     }

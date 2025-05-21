@@ -1,0 +1,3 @@
+{
+    "error.operator.validation.status.invalid": "El campo %s no es válido, debe ser available, unavailable"
+}

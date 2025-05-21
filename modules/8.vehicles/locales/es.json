@@ -1,3 +1,6 @@
 {
-    "error.vehicle.validation.status.invalid": "El campo %s no es válido, debe ser available, unavailable o maintenance"
+    "error.vehicle.validation.status.invalid": "El campo %s no es válido, debe ser available, unavailable o maintenance",
+    "error.validation.number": "El campo %s debe ser un número válido.",
+    "error.vehicle.validation.vehicleYear.min": "El campo %s debe ser mayor o igual a 1980.",
+    "error.vehicle.validation.vehicleYear.max": "El campo %s debe ser menor o igual a 2100."
 }
