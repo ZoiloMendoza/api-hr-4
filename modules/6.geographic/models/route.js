@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'companyId',
                 as: 'company',
             });
+            Route.hasMany(models.trip, {
+                foreignKey: 'routeId',
+                as: 'trips', // Alias para acceder a los viajes relacionados
+            });
         }
     }
 

@@ -23,6 +23,11 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'service',
             });
 
+            Order.belongsTo(models.trip, {
+                foreignKey: 'tripId',
+                as: 'trip',
+            });
+
             Order.hasMany(models.productorder, {
                 foreignKey: 'orderId',
                 as: 'productsOrders',
@@ -134,6 +139,17 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 defaultValue: 0.0,
                 comment: 'Costo del flete en pesos mexicanos',
+            },
+            tripId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'Trips',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'SET NULL',
+                comment: 'ID del viaje asociado al pedido',
             },
             active: {
                 type: DataTypes.BOOLEAN,

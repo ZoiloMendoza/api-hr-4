@@ -23,6 +23,13 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'companyId',
                 as: 'vehicles',
             });
+
+            Company.associate = (models) => {
+                Company.hasMany(models.trip, {
+                    foreignKey: 'companyId',
+                    as: 'trips',
+                });
+            };
         }
     }
     Company.init(

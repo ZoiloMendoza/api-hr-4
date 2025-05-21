@@ -12,6 +12,13 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'companyId',
                 as: 'company',
             });
+
+            Vehicle.associate = (models) => {
+                Vehicle.hasMany(models.trip, {
+                    foreignKey: 'vehicleId',
+                    as: 'trips',
+                });
+            };
         }
     }
 

@@ -269,7 +269,7 @@ class CRUDController extends BaseController {
                         });
 
                         if (!rows.length) {
-                            return res.status(404).json([req.__('No hay operadores')]);
+                            return res.status(404).json([req.__('No hay elementos relacionados')]);
                         }
 
                         const data = rows.map((op) => {

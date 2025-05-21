@@ -1,0 +1,3 @@
+{
+    "error.trip.validation.status.invalid": "El campo %s no es válido, debe ser documenting, emptyInTransit, loading, loadedInTransit, unloading o finished"
+}

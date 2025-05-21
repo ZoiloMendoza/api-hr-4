@@ -75,6 +75,10 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
             },
+            city: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
             active: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,
