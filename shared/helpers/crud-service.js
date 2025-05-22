@@ -187,6 +187,49 @@ class CRUDService extends BaseService {
         }
     }
 
+    async findAndCountAllCustom(options = {}, exclusions = []) {
+        const loggedUser = this.getLoggedUser();
+
+        // Procesar filtros personalizados
+        let f = options.filter || {};
+        let translation = translateAST(f, this.model);
+
+        // Combinar filtros y condiciones adicionales
+        options.where = {
+            ...translation.where,
+            ...options.where,
+        };
+
+        // Excluir registros específicos si se proporcionan
+        if (exclusions.length > 0) {
+            options.where.id = { [Op.notIn]: exclusions };
+        }
+
+        // Incluir condición de compañía si aplica
+        if (this.hasCompany) {
+            options.where.companyId = loggedUser.company.id;
+        }
+
+        // Configurar opciones de búsqueda
+        const findOpts = {
+            where: options.where,
+            include: options.include || [],
+            offset: options.offset,
+            limit: options.limit,
+            order: options.order,
+        };
+
+        try {
+            // Ejecutar la consulta
+            const records = await this.model.findAndCountAll(findOpts);
+            records.rows = records.rows.map((item) => this.toJson(item));
+            return records;
+        } catch (error) {
+            logger.debug(error);
+            throw error;
+        }
+    }
+
     async findAll(options = {}) {
         const loggedUser = this.getLoggedUser();
         //Inject company condition

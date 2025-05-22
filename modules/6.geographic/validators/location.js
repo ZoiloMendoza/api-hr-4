@@ -43,6 +43,14 @@ class LocationValidator extends CRUDValidator {
                     'number.max': 'La latitud no puede ser mayor a 90.',
                     'any.required': 'La latitud es obligatoria.',
                 }),
+                city: Joi.string().max(50).optional().messages({
+                    'string.base': 'La ciudad debe ser una cadena de texto.',
+                    'string.max': 'La ciudad no puede tener más de 50 caracteres.',
+                }),
+                state: Joi.string().max(50).optional().messages({
+                    'string.base': 'El estado debe ser una cadena de texto.',
+                    'string.max': 'El estado no puede tener más de 50 caracteres.',
+                }),
             }).unknown(true),
         );
 

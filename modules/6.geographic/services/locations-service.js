@@ -9,7 +9,7 @@ class LocationsService extends CRUDService {
         this.cache = new NodeCache({ stdTTL: 86400 }); // 1 día
     }
 
-    async updateLocationWithINEGI(id, scale, lng, lat, name, description) {
+    async updateLocationWithINEGI(id, scale, lng, lat, name, description, city, state) {
         const currentLocation = await this.model.findByPk(id);
 
         if (!currentLocation) {
@@ -38,6 +38,8 @@ class LocationsService extends CRUDService {
                 description,
                 lat,
                 lng,
+                city,
+                state,
                 routingLineId: id_routing_net,
                 routingSourceId: source,
                 routingTargetId: target,
@@ -52,6 +54,8 @@ class LocationsService extends CRUDService {
                 lat,
                 lng,
                 scale,
+                city,
+                state,
             };
         }
 
