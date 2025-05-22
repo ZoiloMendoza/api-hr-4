@@ -392,7 +392,6 @@ class CRUDController extends BaseController {
             logger.info(`Querying ${Utils.pluralize(this.modelName)}`);
             let q = null;
             try {
-                logger.info(`115 get normal req-query q ${JSON.stringify(req.query, null, 2)}`);
                 q = this.parser.parse(req.query);
             } catch (error) {
                 return res.status(400).json(req.__('Invalid query'));
