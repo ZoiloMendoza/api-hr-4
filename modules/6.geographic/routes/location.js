@@ -7,18 +7,8 @@ class LocationsController extends CRUDController {
 
         this.addRoute('put', '/location-inegi/:id', async (req, res) => {
             try {
-                const { scale = 100000, lng, lat, name, description, city, state } = req.input;
                 const { id } = req.params;
-                const response = await this.service.updateLocationWithINEGI(
-                    id,
-                    scale,
-                    lng,
-                    lat,
-                    name,
-                    description,
-                    city,
-                    state,
-                );
+                const response = await this.service.updateLocationWithINEGI(id, req.input);
                 res.json(response);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {

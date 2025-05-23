@@ -9,8 +9,10 @@ class LocationsService extends CRUDService {
         this.cache = new NodeCache({ stdTTL: 86400 }); // 1 día
     }
 
-    async updateLocationWithINEGI(id, scale, lng, lat, name, description, city, state) {
-        const currentLocation = await this.model.findByPk(id);
+    async updateLocationWithINEGI(id, body) {
+        const { scale = 100000, lng, lat, name, description, city, state } = body;
+
+        const currentLocation = await this.readById(id);
 
         if (!currentLocation) {
             throw new entityErrors.GenericError(`No se encontró la ubicación con el ID ${id}.`);

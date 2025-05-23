@@ -46,68 +46,60 @@ class TripValidator extends CRUDValidator {
                         'string.base': i18n.__('error.validation.string', 'teleVia'),
                     }),
                 totalKm: Joi.number()
-                    .positive()
-                    .required()
+                    .min(0)
+                    .optional()
                     .messages({
-                        'any.required': i18n.__('error.validation.required', 'totalKm'),
                         'number.base': i18n.__('error.validation.number', 'totalKm'),
-                        'number.positive': i18n.__('error.validation.positive', 'totalKm'),
+                        'number.min': i18n.__('error.validation.min', 'totalKm'),
                     }),
                 mealsAmount: Joi.number()
-                    .positive()
+                    .min(0)
                     .optional()
-                    .default(0)
                     .messages({
-                        'number.base': i18n.__('error.validation.number', 'mealsAmount'),
-                        'number.positive': i18n.__('error.validation.positive', 'mealsAmount'),
+                        'number.base': i18n.__('error.validation.number', 'monto de comidas'),
+                        'number.min': i18n.__('error.validation.min', 'monto de comidas'),
                     }),
                 tollBoothsAmount: Joi.number()
-                    .positive()
+                    .min(0)
                     .optional()
-                    .default(0)
                     .messages({
-                        'number.base': i18n.__('error.validation.number', 'tollBoothsAmount'),
-                        'number.positive': i18n.__('error.validation.positive', 'tollBoothsAmount'),
+                        'number.base': i18n.__('error.validation.number', 'pago de casetas'),
+                        'number.min': i18n.__('error.validation.min', 'pago de casetas'),
                     }),
                 lodgingAmount: Joi.number()
-                    .positive()
+                    .min(0)
                     .optional()
-                    .default(0)
                     .messages({
-                        'number.base': i18n.__('error.validation.number', 'lodgingAmount'),
-                        'number.positive': i18n.__('error.validation.positive', 'lodgingAmount'),
+                        'number.base': i18n.__('error.validation.number', 'pago de hospedaje'),
+                        'number.min': i18n.__('error.validation.min', 'pago de hospedaje'),
                     }),
                 transitAmount: Joi.number()
-                    .positive()
+                    .min(0)
                     .optional()
-                    .default(0)
                     .messages({
-                        'number.base': i18n.__('error.validation.number', 'transitAmount'),
-                        'number.positive': i18n.__('error.validation.positive', 'transitAmount'),
+                        'number.base': i18n.__('error.validation.number', 'tarifa de movilidad'),
+                        'number.min': i18n.__('error.validation.min', 'tarifa de movilidad'),
                     }),
                 handlingAmount: Joi.number()
-                    .positive()
+                    .min(0)
                     .optional()
-                    .default(0)
                     .messages({
-                        'number.base': i18n.__('error.validation.number', 'handlingAmount'),
-                        'number.positive': i18n.__('error.validation.positive', 'handlingAmount'),
+                        'number.base': i18n.__('error.validation.number', 'pago de maniobras'),
+                        'number.min': i18n.__('error.validation.min', 'pago de maniobras'),
                     }),
                 fuelAmount: Joi.number()
-                    .positive()
+                    .min(0)
                     .optional()
-                    .default(0)
                     .messages({
-                        'number.base': i18n.__('error.validation.number', 'fuelAmount'),
-                        'number.positive': i18n.__('error.validation.positive', 'fuelAmount'),
+                        'number.base': i18n.__('error.validation.number', 'pago de combustible'),
+                        'number.min': i18n.__('error.validation.min', 'pago de combustible'),
                     }),
                 pendingExpenses: Joi.number()
-                    .positive()
+                    .min(0)
                     .optional()
-                    .default(0)
                     .messages({
-                        'number.base': i18n.__('error.validation.number', 'pendingExpenses'),
-                        'number.positive': i18n.__('error.validation.positive', 'pendingExpenses'),
+                        'number.base': i18n.__('error.validation.number', 'gastos por comprobar'),
+                        'number.min': i18n.__('error.validation.min', 'gastos por comprobar'),
                     }),
                 orders: Joi.array()
                     .items(
