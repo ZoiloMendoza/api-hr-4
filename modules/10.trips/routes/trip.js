@@ -1,9 +1,10 @@
-const { trip } = models;
+const { trip, route } = models;
 const { CRUDController, entityErrors } = helpers;
 
 class TripsController extends CRUDController {
     constructor() {
         super(trip);
+        this.addRelation(route, ['id']);
         this.addRoute('post', '/trip/full', async (req, res) => {
             logger.info('Creando un nuevo viaje');
             try {

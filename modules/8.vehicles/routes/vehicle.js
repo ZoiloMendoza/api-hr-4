@@ -28,6 +28,19 @@ class VehiclesController extends CRUDController {
                 return res.status(500).json([error.message]);
             }
         });
+        this.addRoute('get', '/vehicles/available-with-operators/:vehicleId', async (req, res) => {
+            const { vehicleId } = req.params;
+
+            try {
+                const vehicle = await this.service.getVehicleWithOperatorsAndEmployeesById(vehicleId);
+                return res.json(vehicle);
+            } catch (error) {
+                if (error instanceof entityErrors.EntityNotFoundError) {
+                    return res.status(404).json([error.message]);
+                }
+                return res.status(500).json([error.message]);
+            }
+        });
     }
 }
 

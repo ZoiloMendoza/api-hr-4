@@ -5,7 +5,7 @@ class OrdersController extends CRUDController {
     constructor() {
         super(order);
         this.addRelation(client, ['id']);
-        this.addRoute('get', '/orders/filter-by-route/:routeId', async (req, res) => {
+        this.addRoute('get', '/filter-by-route/:routeId/orders', async (req, res) => {
             const { routeId } = req.params;
             let filter = null;
             try {

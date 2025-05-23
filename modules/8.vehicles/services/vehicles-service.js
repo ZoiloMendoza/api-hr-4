@@ -38,5 +38,35 @@ class VehiclesService extends CRUDService {
 
         return { rows: items.rows, count: items.count };
     }
+    async getVehicleWithOperatorsAndEmployeesById(vehicleId) {
+        const item = await this.model.findOne({
+            where: {
+                id: vehicleId,
+                active: true,
+            },
+            attributes: { exclude: ['active', 'companyId', 'createdAt', 'updatedAt'] },
+            include: [
+                {
+                    model: operator,
+                    as: 'operator',
+                    attributes: ['id', 'status', 'licenseNumber', 'licenseExpiry', 'debt'],
+                    required: true,
+                    include: [
+                        {
+                            model: models.employee,
+                            as: 'employee',
+                            attributes: ['firstName', 'lastName'],
+                        },
+                    ],
+                },
+            ],
+        });
+
+        if (!item) {
+            throw new entityErrors.EntityNotFoundError('El vehículo especificado no existe o no está activo');
+        }
+
+        return item;
+    }
 }
 module.exports = new VehiclesService();

@@ -62,11 +62,12 @@ class OrdersService extends CRUDService {
         const orders = await this.findAndCountAllCustom({
             filter: {
                 ...q.filter,
-                status: 'pending', // Filtro personalizado
             },
             where: {
                 [Op.and]: [
                     { active: true }, // Filtrar solo pedidos activos
+                    { status: 'pending' },
+                    { tripId: null },
                     {
                         [Op.or]: [
                             ...Array.from(cityStatePairs).map((pair) => {
