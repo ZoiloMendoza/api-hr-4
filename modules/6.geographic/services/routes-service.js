@@ -148,20 +148,7 @@ class RoutesService extends CRUDService {
         return response;
     }
 
-    async getSegmentsNotInRoute(segments) {
-        // const segmentIds = segments.map((segment) => segment.segmentId);
-
-        // const detailedSegments = await segment.findAll({
-        //     where: {
-        //         id: segments,
-        //     },
-        //     attributes: {
-        //         exclude: ['companyId', 'active', 'createdAt', 'updatedAt'],
-        //     },
-        // });
-        return segments;
-    }
-
+    //no se si es necesario
     slugify(texto) {
         return texto
             .toLowerCase()

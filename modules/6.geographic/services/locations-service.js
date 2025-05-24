@@ -6,7 +6,7 @@ const NodeCache = require('node-cache');
 class LocationsService extends CRUDService {
     constructor() {
         super(location);
-        this.cache = new NodeCache({ stdTTL: 86400 }); // 1 día
+        this.cache = new NodeCache({ stdTTL: 2592000 }); // 1 mes
     }
 
     async updateLocationWithINEGI(id, body) {
@@ -16,10 +16,6 @@ class LocationsService extends CRUDService {
 
         if (!currentLocation) {
             throw new entityErrors.GenericError(`No se encontró la ubicación con el ID ${id}.`);
-        }
-
-        if (currentLocation.lat === lat && currentLocation.lng === lng) {
-            return currentLocation;
         }
 
         const cacheKey = `inegi:update:${scale}:${lng}:${lat}`;

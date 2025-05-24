@@ -6,13 +6,13 @@ const NodeCache = require('node-cache');
 class SegmentsService extends CRUDService {
     constructor() {
         super(segment);
-        this.cache = new NodeCache({ stdTTL: 3600 });
+        this.cache = new NodeCache({ stdTTL: 2592000 });
     }
 
     async calculateSegment(
-        optimalRoute = true,
-        tollRoute = true,
-        freeRoute = true,
+        optimalRoute = false,
+        tollRoute = false,
+        freeRoute = false,
         originId,
         destinationId,
         isFirst,
@@ -126,6 +126,7 @@ class SegmentsService extends CRUDService {
                 }
             }
         });
+
         const formattedRoutes = Object.keys(rutas).reduce((acc, key) => {
             const detail = detalles[key];
             if (detail) {
@@ -143,14 +144,13 @@ class SegmentsService extends CRUDService {
             return acc;
         }, {});
 
-        //logger.info(`122 Rutas calculadas: ${JSON.stringify(formattedRoutes)}`);
-
         if (Object.keys(formattedRoutes).length === 0) {
             throw new entityErrors.GenericError(
                 'No se encontraron rutas disponibles. Verifique los datos de origen y destino.',
             );
         }
 
+        //Es para actualizar kms y peaje del segmento cuando se consulta por primera vez
         if (isFirst && segmentId && formattedRoutes.optimalRoute) {
             const { km, tollBoothsAmount } = formattedRoutes.optimalRoute;
             await segment.update(

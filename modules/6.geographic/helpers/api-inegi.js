@@ -59,21 +59,34 @@ async function makeRequest(endpoint, parametros) {
 
         const jsonResponse = response.data;
 
-        if (jsonResponse.response && jsonResponse.response.success) {
-            logger.info(`API INEGI: ${JSON.stringify(jsonResponse.response)}`);
-
-            if (!jsonResponse.data || Object.keys(jsonResponse.data).length === 0) {
-                throw new entityErrors.GenericError('La API de INEGI no encontro la información.');
-            }
-
-            return jsonResponse;
-        } else {
+        if (!jsonResponse.response) {
             throw new entityErrors.GenericError(
-                jsonResponse.response.message || 'Error desconocido en la API de INEGI',
+                'No se pudo procesar la solicitud en este momento. Por favor, inténtelo de nuevo más tarde.',
             );
         }
+
+        // Verificar si success es false
+        if (!jsonResponse.response.success) {
+            throw new entityErrors.GenericError(
+                jsonResponse.response?.message ||
+                    'Hubo un problema al procesar la solicitud. Por favor, verifique los datos ingresados e inténtelo nuevamente.',
+            );
+        }
+
+        // Verificar si los datos están vacíos
+        if (!jsonResponse.data || Object.keys(jsonResponse.data).length === 0) {
+            throw new entityErrors.GenericError(
+                'No se encontraron resultados para su búsqueda. Por favor, intente con otros parámetros.',
+            );
+        }
+
+        logger.info(`API INEGI: ${JSON.stringify(jsonResponse.response)}`);
+        return jsonResponse;
     } catch (error) {
-        throw new entityErrors.GenericError(`${error.response?.data || error.message}`);
+        // Manejo de errores
+        throw new entityErrors.GenericError(
+            `${error.response?.data || 'Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.'}`,
+        );
     }
 }
 
