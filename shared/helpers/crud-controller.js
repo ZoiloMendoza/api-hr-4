@@ -432,8 +432,10 @@ class CRUDController extends BaseController {
     addPost() {
         this.addRoute('post', `/${this.modelName}`, async (req, res) => {
             logger.info(`Creating ${this.modelName} ${req.input.name}`);
+            const confirm =
+                req.query.confirm === 'true' || req.query.confirm === '1';
             try {
-                const newItem = await this.service.create(req.input);
+                const newItem = await this.service.create(req.input, confirm);
                 return res.json(newItem);
             } catch (error) {
                 return this.throwError(error, req, res);
@@ -458,12 +460,50 @@ class CRUDController extends BaseController {
         this.addRoute('delete', `/${this.modelName}/:id`, async (req, res) => {
             logger.info(`Deleting ${this.modelName} ${req.params.id}`);
             const id = req.params.id;
+            const confirm = req.query.confirm === 'true' || req.query.confirm === '1';
             try {
-                const toDel = await this.service.delete(id);
-                if (!toDel) {
-                    return res.status(404).json();
+                const dependencies = await this.service.checkDeleteDependencies(id);
+                const depEntries = Object.entries(dependencies).filter(([_, d]) => d.count > 0);
+
+                const hasDeps = Object.values(dependencies).some((d) => d.count > 0);
+
+                if (confirm || !hasDeps) {
+                    const toDel = await this.service.delete(id);
+                    if (!toDel) {
+                        return res.status(404).json();
+                    }
+                    return res.json(toDel);
                 }
-                return res.json(toDel);
+                // const depMsg = Object.entries(dependencies)
+                //     .filter(([_, d]) => d.count > 0)
+                //     .map(([rel, d]) => `${rel}: ${d.count}`);
+
+                let restrict = depEntries.find(([_, d]) => d.strategy === 'RESTRICT');
+                let cascade = depEntries.find(([_, d]) => d.strategy === 'CASCADE');
+                let setNull = depEntries.find(([_, d]) => d.strategy === 'SET_NULL');
+
+                let message = '';
+                if (restrict) {
+                    message = `RESTRICT ${req.__('No se puede eliminar, el registro está en uso')}`;
+                } else if (cascade) {
+                    message = `CASCADE ${req.__('Esta acción eliminará a los elementos relacionados')}`;
+                } else if (setNull) {
+                    message = `SET_NULL ${req.__('Esta acción afectará elementos relacionados')}`;
+                }
+                return res.status(409).json([message]);
+            } catch (error) {
+                return this.throwError(error, req, res);
+            }
+        });
+    }
+
+    addRestore() {
+        this.addRoute('patch', `/${this.modelName}/:id/restore`, async (req, res) => {
+            logger.info(`Restoring ${this.modelName} ${req.params.id}`);
+            const id = req.params.id;
+            try {
+                const restored = await this.service.restore(id);
+                return res.json(restored);
             } catch (error) {
                 return this.throwError(error, req, res);
             }
@@ -492,6 +532,7 @@ class CRUDController extends BaseController {
         this.addPost();
         this.addPut();
         this.addDelete();
+        this.addRestore();
         //this.addJsonMethods();
     }
 }

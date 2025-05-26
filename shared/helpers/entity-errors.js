@@ -22,9 +22,16 @@ class GenericError extends Error {
     }
 }
 
+class DeleteRestrictionError extends Error {
+    constructor(message) {
+        super(message);
+    }
+}
+
 module.exports = {
     EntityNotFoundError,
     UnauthorizedError,
     DuplicateEntityError,
     GenericError,
+    DeleteRestrictionError,
 };

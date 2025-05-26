@@ -19,6 +19,10 @@
     "info.config.start": "Iniciando configuración",
     "not allowed": "No tienes permisos para realizar esta acción",
     "duplicate role": "El rol %s ya existe",
+    "duplicate entity": "El %s ya existe",
+    "duplicate entity active": "%s active El %s ya existe",
+    "duplicate entity inactive": "%s inactive El %s ya existe",
     "missing entities": "No se encontraron los %s: %s",
-    "not associated": "%s no asociados      : %s"
+    "not associated": "%s no asociados      : %s",
+    "delete.restricted": "No se puede eliminar debido a dependencias en %s"
 }

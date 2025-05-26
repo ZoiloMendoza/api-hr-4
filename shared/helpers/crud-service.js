@@ -1,6 +1,6 @@
 const BaseService = require('./base-service');
 const { EntityNotFoundError } = require('./entity-errors');
-const { DataTypes, Op, Utils } = require('sequelize');
+const { DataTypes, Op, Utils, UniqueConstraintError } = require('sequelize');
 const entityErrors = require('./entity-errors');
 const { translateAST } = require('./sequelize-query');
 
@@ -88,16 +88,44 @@ class CRUDService extends BaseService {
         return json;
     }
 
-    async create(data) {
-        const getLoggedUser = this.getLoggedUser();
+    async create(data, confirm = false) {
+        const loggedUser = this.getLoggedUser();
         if (this.hasCompany) {
-            data.companyId = getLoggedUser.company.id;
+            data.companyId = loggedUser.company.id;
         }
         try {
             const createdRecord = await this.model.create(data);
             return this.toJson(createdRecord);
         } catch (error) {
+            if (error instanceof UniqueConstraintError) {
+                const fields = error.fields || {};
+                if (Object.keys(fields).length > 0) {
+                    const where = { ...fields };
+                    if (this.hasCompany) {
+                        where.companyId = loggedUser.company.id;
+                    }
+                    const conflict = await this.model.findOne({ where });
+                    if (conflict) {
+                        const fieldKeys = Object.keys(fields);
+                        if (conflict.active === false) {
+                            if (confirm) {
+                                await conflict.update({ active: true });
+                                return this.toJson(conflict);
+                            }
+                            throw new entityErrors.DuplicateEntityError(
+                                i18n.__('duplicate entity inactive', conflict.id, fieldKeys.join(', '))
+                            );
+                        } else {
+                            // Ya existe y está activo
+                            throw new entityErrors.DuplicateEntityError(
+                                i18n.__('duplicate entity active', conflict.id, fieldKeys.join(', '))
+                            );
+                        }
+                    }
+                }
+            }
             logger.debug(error);
+
             throw error;
         }
     }
@@ -296,7 +324,73 @@ class CRUDService extends BaseService {
             const updatedRecord = await this._readById(id);
             return this.toJson(updatedRecord);
         } catch (error) {
-            console.debug(error);
+            if (error instanceof UniqueConstraintError) {
+                const fields = error.fields || {};
+                if (Object.keys(fields).length > 0) {
+                    const where = { ...fields };
+                    if (this.hasCompany) {
+                        where.companyId = loggedUser.company.id;
+                    }
+                    const conflict = await this.model.findOne({ where });
+                    if (conflict) {
+                        const fieldKeys = Object.keys(fields);
+                        if (conflict.active === false) {
+                            throw new entityErrors.DuplicateEntityError(
+                                i18n.__('duplicate entity inactive', conflict.id, fieldKeys.join(', '))
+                            );
+                        } else {
+                            throw new entityErrors.DuplicateEntityError(
+                                i18n.__('duplicate entity active', conflict.id, fieldKeys.join(', '))
+                            );
+                        }
+                    }
+                }
+            }
+            logger.debug(error);
+            throw error;
+        }
+    }
+
+    async checkDeleteDependencies(id) {
+        try {
+            await this._readById(id);
+
+            const strategiesConfig = require('./delete-strategies');
+            const strategies = strategiesConfig[this.modelName] || {};
+
+            const result = {};
+
+            for (const [relationName, strategy] of Object.entries(strategies)) {
+                const assoc = this.model.associations[relationName];
+                if (!assoc) continue;
+
+                if (assoc.associationType === 'BelongsTo') {
+                    result[relationName] = { strategy, count: 0 };
+                    continue;
+                }
+
+                let targetModel = assoc.target;
+                let foreignKey = assoc.foreignKey;
+
+                if (assoc.associationType === 'BelongsToMany') {
+                    const throughModel = assoc.through && (assoc.through.model || assoc.throughModel);
+                    if (throughModel) {
+                        targetModel = throughModel;
+                    }
+                }
+
+                const where = { [foreignKey]: id };
+                if (targetModel.rawAttributes.active) {
+                    where.active = true;
+                }
+
+                const count = await targetModel.count({ where });
+                result[relationName] = { strategy, count };
+            }
+
+            return result;
+        } catch (error) {
+            logger.debug(error);
             throw error;
         }
     }
@@ -304,7 +398,107 @@ class CRUDService extends BaseService {
     async delete(id) {
         try {
             const record = await this._readById(id);
+
+            const strategiesConfig = require('./delete-strategies');
+            const strategies = strategiesConfig[this.modelName] || {};
+
+            for (const [relationName, strategy] of Object.entries(strategies)) {
+                const assoc = this.model.associations[relationName];
+                if (!assoc) continue;
+
+                // Omitir relaciones BelongsTo
+                if (assoc.associationType === 'BelongsTo') continue;
+
+                let targetModel = assoc.target; // Modelo relacionado por defecto
+                let foreignKey = assoc.foreignKey; // llave foránea
+
+                if (assoc.associationType === 'BelongsToMany') {
+                    // Para relaciones muchos a muchos se debe operar sobre el modelo "through"
+                    const throughModel = assoc.through && (assoc.through.model || assoc.throughModel);
+                    if (throughModel) {
+                        targetModel = throughModel;
+                    }
+                }
+
+                const where = { [foreignKey]: id }; // EJ { clientId: 1 }
+                if (targetModel.rawAttributes.active) {
+                    where.active = true; // Solo si el modelo tiene el campo "active"
+                }
+
+                switch (strategy) {
+                    case 'RESTRICT': {
+                        const count = await targetModel.count({ where });
+                        if (count > 0) {
+                            throw new entityErrors.DeleteRestrictionError(
+                                i18n.__('delete.restricted', relationName),
+                            );
+                        }
+                        break;
+                    }
+                    case 'SET_NULL':
+                        await targetModel.update({ [foreignKey]: null }, { where });
+                        break;
+                    case 'CASCADE':
+                        if (targetModel.rawAttributes.active) {
+                            await targetModel.update({ active: false }, { where }); // Cambia el active a false
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
             record.active = false;
+            await record.save();
+            return this.toJson(record);
+        } catch (error) {
+            logger.debug(error);
+            throw error;
+        }
+    }
+
+    async restore(id) {
+        try {
+            const loggedUser = this.getLoggedUser();
+            const where = { id };
+            if (this.hasCompany) {
+                where.companyId = loggedUser.company.id;
+            }
+
+            const record = await this.model.findOne({ where });
+            if (!record) {
+                throw new EntityNotFoundError(i18n.__('entity not found', this.getModelName()));
+            }
+
+            const strategiesConfig = require('./delete-strategies');
+            const strategies = strategiesConfig[this.modelName] || {};
+
+            for (const [relationName, strategy] of Object.entries(strategies)) {
+                if (strategy !== 'CASCADE') {
+                    continue;
+                }
+                const assoc = this.model.associations[relationName];
+                if (!assoc) {
+                    continue;
+                }
+
+                let targetModel = assoc.target;
+                let foreignKey = assoc.foreignKey;
+
+                if (assoc.associationType === 'BelongsToMany') {
+                    const throughModel = assoc.through && (assoc.through.model || assoc.throughModel);
+                    if (throughModel) {
+                        targetModel = throughModel;
+                    }
+                }
+
+                const whereUpdate = { [foreignKey]: id };
+                if (targetModel.rawAttributes.active) {
+                    await targetModel.update({ active: true }, { where: whereUpdate });
+                }
+            }
+
+            record.active = true;
             await record.save();
             return this.toJson(record);
         } catch (error) {
