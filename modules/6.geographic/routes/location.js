@@ -12,7 +12,7 @@ class LocationsController extends CRUDController {
                 res.json(response);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
-                    return res.status(409).json([error.message]);
+                    return res.status(410).json([error.message]);
                 }
                 res.status(500).json([error.message]);
             }
@@ -26,7 +26,7 @@ class LocationsController extends CRUDController {
                 res.json(new SearchResult(response, 1, response.length, response.length));
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
-                    return res.status(409).json([error.message]);
+                    return res.status(410).json([error.message]);
                 }
                 res.status(500).json([error.message]);
             }
@@ -40,7 +40,7 @@ class LocationsController extends CRUDController {
                 res.json(new SearchResult(response, 1, response.length, response.length));
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
-                    return res.status(409).json([error.message]);
+                    return res.status(410).json([error.message]);
                 }
                 res.status(500).json([error.message]);
             }

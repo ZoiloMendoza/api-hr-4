@@ -20,7 +20,7 @@ class SegmentsController extends CRUDController {
                 res.json(response);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
-                    return res.status(409).json([error.message]);
+                    return res.status(410).json([error.message]);
                 }
                 res.status(500).json([error.message]);
             }
