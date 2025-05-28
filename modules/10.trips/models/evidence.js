@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'tripId',
                 as: 'trip',
             });
+
+            Evidence.hasMany(models.evidencephoto, {
+                foreignKey: 'evidenceId',
+                as: 'photos',
+            });
         }
     }
 
@@ -47,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            tableName: 'evidences',
+            tableName: 'evidences', //por alguna razón sequelize no reconoce el plural de evidence
             modelName: 'Evidence',
         },
     );

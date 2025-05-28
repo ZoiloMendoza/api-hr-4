@@ -1,9 +1,10 @@
-const { evidence } = models;
+const { evidence, evidencephoto } = models;
 const { CRUDController } = helpers;
 
 class EvidencesController extends CRUDController {
     constructor() {
         super(evidence);
+        this.addRelation(evidencephoto, ['id']);
     }
 }
 
