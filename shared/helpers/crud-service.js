@@ -88,7 +88,7 @@ class CRUDService extends BaseService {
         return json;
     }
 
-    async create(data, confirm = false) {
+    async create(data, confirm = false, replace = false) {
         const loggedUser = this.getLoggedUser();
         if (this.hasCompany) {
             data.companyId = loggedUser.company.id;
@@ -111,6 +111,18 @@ class CRUDService extends BaseService {
                             if (confirm) {
                                 await conflict.update({ active: true });
                                 return this.toJson(conflict);
+                            } else if (replace) {
+                                const updateData = {};
+                                fieldKeys.forEach((k) => {
+                                    if (typeof conflict[k] === 'string') {
+                                        updateData[k] = `${conflict[k]}-inactive-${Date.now()}`;
+                                    }
+                                });
+                                if (Object.keys(updateData).length > 0) {
+                                    await conflict.update(updateData);
+                                }
+                                const created = await this.model.create(data);
+                                return this.toJson(created);
                             }
                             throw new entityErrors.DuplicateEntityError(
                                 i18n.__('duplicate entity inactive', conflict.id, fieldKeys.join(', '))

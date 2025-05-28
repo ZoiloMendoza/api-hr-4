@@ -38,25 +38,29 @@ module.exports = {
         employees: 'RESTRICT'
     },
     trip: {
-        orders: 'CASCADE'
+        orders: 'CASCADE',
+        evidences: 'CASCADE'
+    },
+    evidencetype: {
+        evidences: 'CASCADE'
+    },
+    evidence: {
+        photos: 'CASCADE'
     },
     country: {
         directions: 'CASCADE'
     },
-
     location: {
         originSegments: 'SET_NULL',
         destinationSegments: 'SET_NULL',
         segments: 'CASCADE'
     },
-
     segment: {
         routes: 'CASCADE',
         locations: 'CASCADE',
         originLocation: 'SET_NULL',
         destinationLocation: 'SET_NULL'
     },
-
     route: {
         segments: 'CASCADE',
         trips: 'RESTRICT'
