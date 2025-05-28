@@ -1,9 +1,31 @@
 const { evidencephoto } = models;
 const { CRUDService } = helpers;
+const crypto = require('crypto');
+const S3Plugin = require('../../../server/plugins/s3');
 
 class EvidencephotosService extends CRUDService {
     constructor() {
         super(evidencephoto);
+        this.s3 = new S3Plugin({
+            region: process.env.S3_REGION || 'us-east-1',
+            accessKeyId: process.env.S3_ACCESS_KEY_ID || 'default',
+            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'default',
+            endpoint: process.env.S3_ENDPOINT || 'https://s3.amazonaws.com',
+            bucketName: process.env.S3_BUCKET_NAME || 'default-bucket',
+        });
+    }
+
+    async uploadEvidencePhoto(file, { evidenceId, description, actionRefId }) {
+        const name = `img-${crypto.randomUUID()}`;
+        await this.s3.upload(name, file);
+        const imageUrl = `${process.env.S3_URL}/${name}`;
+        const created = await this.model.create({
+            evidenceId,
+            description,
+            actionRefId,
+            imageUrl,
+        });
+        return this.toJson(created);
     }
 }
 module.exports = new EvidencephotosService();
