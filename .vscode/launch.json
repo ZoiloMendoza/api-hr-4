@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Server",
+            "skipFiles": ["<node_internals>/**"],
+            "program": "${workspaceFolder}/server/server.js", // Ruta al archivo principal del servidor
+            "cwd": "${workspaceFolder}", // Directorio de trabajo
+            "envFile": "${workspaceFolder}/.env", // Carga las variables de entorno desde .env
+            "console": "integratedTerminal" // Usa la terminal integrada de VS Code
+        }
+    ]
+}

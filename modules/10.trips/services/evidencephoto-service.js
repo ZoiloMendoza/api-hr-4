@@ -18,12 +18,12 @@ class EvidencephotosService extends CRUDService {
     async uploadEvidencePhoto(file, { evidenceId, description, actionRefId }) {
         const name = `img-${crypto.randomUUID()}`;
         await this.s3.upload(name, file);
-        const imageUrl = `${process.env.S3_URL}/${name}`;
+        //const imageUrl = `${process.env.S3_URL}/${name}`;
         const created = await this.model.create({
             evidenceId,
             description,
             actionRefId,
-            imageUrl,
+            imageId: name,
         });
         return this.toJson(created);
     }
