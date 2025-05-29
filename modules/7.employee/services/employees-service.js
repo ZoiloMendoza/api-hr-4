@@ -1,5 +1,4 @@
 'use strict';
-
 const { employee } = models;
 const { CRUDService, entityErrors } = helpers;
 

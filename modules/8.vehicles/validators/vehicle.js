@@ -41,6 +41,9 @@ class VehicleValidator extends CRUDValidator {
                 })
                 .optional(),
         );
+
+        this.routes.get['/vehicles/available-with-operators'] = false;
+        this.routes.get['/vehicles/available-with-operators/:vehicleId'] = false;
     }
 }
 

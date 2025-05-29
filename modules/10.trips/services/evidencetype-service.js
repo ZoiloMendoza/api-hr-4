@@ -1,28 +1,10 @@
+'use strict';
 const { evidencetype } = models;
 const { CRUDService, entityErrors } = helpers;
 const crypto = require('crypto');
 class EvidencetypesService extends CRUDService {
     constructor() {
         super(evidencetype);
-    }
-
-    async addEvidenceTypeAction(evidenceTypeId, newAction) {
-        const evidenceTypeDb = await this.readById(evidenceTypeId);
-        if (!evidenceTypeDb) {
-            throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'Tipo de Evidencia'));
-        }
-
-        if (!evidenceTypeDb.actions) {
-            evidenceTypeDb.actions = [];
-        }
-
-        newAction.refId = crypto.randomBytes(8).toString('hex');
-
-        evidenceTypeDb.actions.push(newAction);
-
-        await this.update(evidenceTypeId, evidenceTypeDb);
-
-        return newAction;
     }
 
     async updateEvidenceTypeActionByRefId(evidenceTypeId, actionRefId, updatedAction) {
@@ -48,7 +30,32 @@ class EvidencetypesService extends CRUDService {
 
         await this.update(evidenceTypeId, evidenceTypeDb);
 
-        return evidenceTypeDb.actions[actionIndex];
+        return {
+            ...evidenceTypeDb.actions[actionIndex],
+            id: actionRefId,
+        };
+    }
+
+    async addEvidenceTypeAction(evidenceTypeId, newAction) {
+        const evidenceTypeDb = await this.readById(evidenceTypeId);
+        if (!evidenceTypeDb) {
+            throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'Tipo de Evidencia'));
+        }
+
+        if (!evidenceTypeDb.actions) {
+            evidenceTypeDb.actions = [];
+        }
+
+        newAction.refId = crypto.randomBytes(8).toString('hex');
+
+        evidenceTypeDb.actions.push(newAction);
+
+        await this.update(evidenceTypeId, evidenceTypeDb);
+
+        return {
+            ...newAction,
+            id: newAction.refId,
+        };
     }
 
     async deleteEvidenceTypeActionByRefId(evidenceTypeId, actionRefId) {
@@ -73,7 +80,10 @@ class EvidencetypesService extends CRUDService {
 
         await this.update(evidenceTypeId, evidenceTypeDb);
 
-        return deletedAction;
+        return {
+            ...deletedAction,
+            id: actionRefId,
+        };
     }
 
     async getEvidenceTypeActions(evidenceTypeId) {
@@ -88,27 +98,9 @@ class EvidencetypesService extends CRUDService {
 
         return evidenceTypeDb.actions.map((action) => ({
             ...action,
+            id: action.refId,
             evidenceTypeId: evidenceTypeId,
         }));
-    }
-
-    async addEvidenceTypeAction(evidenceTypeId, newAction) {
-        const evidenceTypeDb = await this.readById(evidenceTypeId);
-        if (!evidenceTypeDb) {
-            throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'Tipo de Evidencia'));
-        }
-
-        if (!evidenceTypeDb.actions) {
-            evidenceTypeDb.actions = [];
-        }
-
-        newAction.refId = crypto.randomBytes(8).toString('hex');
-
-        evidenceTypeDb.actions.push(newAction);
-
-        await this.update(evidenceTypeId, evidenceTypeDb);
-
-        return newAction;
     }
 }
 module.exports = new EvidencetypesService();

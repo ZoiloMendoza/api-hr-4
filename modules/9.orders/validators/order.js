@@ -26,6 +26,8 @@ class OrderValidator extends CRUDValidator {
                 })
                 .optional(),
         );
+
+        this.routes.get['/filter-by-route/:routeId/orders'] = false;
     }
 }
 

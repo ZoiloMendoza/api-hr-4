@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
         {
             refId: {
                 type: DataTypes.STRING,
-                allowNull: false,
+                allowNull: true,
                 unique: true,
             },
             name: {
