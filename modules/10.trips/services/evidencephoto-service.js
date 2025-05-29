@@ -27,5 +27,13 @@ class EvidencephotosService extends CRUDService {
         });
         return this.toJson(created);
     }
+
+    async deleteEvidencePhoto(id) {
+        const record = await this._readById(id);
+        if (record.imageId) {
+            await this.s3.delete(record.imageId);
+        }
+        return super.delete(id);
+    }
 }
 module.exports = new EvidencephotosService();

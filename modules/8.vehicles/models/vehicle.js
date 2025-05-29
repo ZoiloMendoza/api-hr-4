@@ -13,12 +13,10 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'company',
             });
 
-            Vehicle.associate = (models) => {
-                Vehicle.hasMany(models.trip, {
-                    foreignKey: 'vehicleId',
-                    as: 'trips',
-                });
-            };
+            Vehicle.hasMany(models.trip, {
+                foreignKey: 'vehicleId',
+                as: 'trips',
+            });
         }
     }
 
@@ -104,6 +102,20 @@ module.exports = (sequelize, DataTypes) => {
                             throw new EntityNotFoundError(i18n.__('El operador ya está asignado a otro vehículo.'));
                         }
                     }
+
+                    // If status is being set to 'available', ensure there are no active trips
+                    if (vehicle.status === 'available' && vehicle._previousDataValues.status !== 'available') {
+                        const activeTrip = await models.trip.findOne({
+                            where: { vehicleId: vehicle.id, active: true },
+                        });
+                        if (activeTrip) {
+                            throw new EntityNotFoundError(
+                                i18n.__(
+                                    `El vehículo no puede cambiar su status, porque está asignado al viaje con folio ${activeTrip.tripCode}.`,
+                                ),
+                            );
+                        }
+                    }
                 },
                 // Hook para actualizar el estado del operador después de asignarlo a un vehículo
                 async afterCreate(vehicle, options) {
@@ -118,6 +130,15 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 // Hook para manejar actualizaciones en el vehículo
                 async afterUpdate(vehicle, options) {
+                    // Si el vehículo se desactiva, liberar al operador y eliminar la asignación
+                    // para no violar la unicidad del campo operatorId en vehículos activos
+                    if (
+                        vehicle._previousDataValues.active &&
+                        vehicle.active === false &&
+                        vehicle.operatorId
+                    ) {
+                        await vehicle.update({ operatorId: null }, { hooks: false });
+                    }
                     // Si cambia el operador, actualizar el estado del operador anterior a 'available'
                     if (vehicle.operatorId && vehicle.operatorId !== vehicle._previousDataValues.operatorId) {
                         const previousOperator = await models.operator.findByPk(
@@ -141,7 +162,10 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // Si se desasigna un operador (operatorId es null), actualizar el estado del operador anterior a 'available'
+                    // Si se desasigna un operador (operatorId es null), actualizar
+                    // el estado del operador anterior a 'available'. Esto también
+                    // ocurre cuando un vehículo se desactiva y liberamos la
+                    // relación para mantener la unicidad.
                     if (!vehicle.operatorId && vehicle._previousDataValues.operatorId) {
                         const previousOperator = await models.operator.findByPk(
                             vehicle._previousDataValues.operatorId,

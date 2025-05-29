@@ -24,12 +24,10 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'vehicles',
             });
 
-            Company.associate = (models) => {
-                Company.hasMany(models.trip, {
-                    foreignKey: 'companyId',
-                    as: 'trips',
-                });
-            };
+            Company.hasMany(models.trip, {
+                foreignKey: 'companyId',
+                as: 'trips',
+            });
         }
     }
     Company.init(

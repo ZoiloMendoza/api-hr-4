@@ -131,6 +131,78 @@ module.exports = (sequelize, DataTypes) => {
         {
             sequelize,
             modelName: 'Trip',
+            hooks: {
+                async afterCreate(trip, options) {
+                    if (trip.vehicleId) {
+                        const vehicle = await models.vehicle.findByPk(trip.vehicleId, {
+                            where: { active: true },
+                        });
+                        if (vehicle) {
+                            await vehicle.update({ status: 'unavailable' });
+                        }
+                    }
+                },
+                async afterUpdate(trip, options) {
+                    // If vehicle changed, release previous vehicle
+                    if (
+                        trip.vehicleId &&
+                        trip.vehicleId !== trip._previousDataValues.vehicleId
+                    ) {
+                        if (trip._previousDataValues.vehicleId) {
+                            const prevVehicle = await models.vehicle.findByPk(
+                                trip._previousDataValues.vehicleId,
+                                { where: { active: true } },
+                            );
+                            if (prevVehicle) {
+                                await prevVehicle.update({ status: 'available' });
+                            }
+                        }
+
+                        const newVehicle = await models.vehicle.findByPk(trip.vehicleId, {
+                            where: { active: true },
+                        });
+                        if (newVehicle) {
+                            await newVehicle.update({ status: 'unavailable' });
+                        }
+                    }
+
+                    // If vehicle removed
+                    if (!trip.vehicleId && trip._previousDataValues.vehicleId) {
+                        const prevVehicle = await models.vehicle.findByPk(
+                            trip._previousDataValues.vehicleId,
+                            { where: { active: true } },
+                        );
+                        if (prevVehicle) {
+                            await prevVehicle.update({ status: 'available' });
+                        }
+                    }
+
+                    // If trip deactivated
+                    if (
+                        trip.active === false &&
+                        trip._previousDataValues.active === true &&
+                        trip._previousDataValues.vehicleId
+                    ) {
+                        const vehicle = await models.vehicle.findByPk(
+                            trip._previousDataValues.vehicleId,
+                            { where: { active: true } },
+                        );
+                        if (vehicle) {
+                            await vehicle.update({ status: 'available' });
+                        }
+                    }
+                },
+                async afterDestroy(trip, options) {
+                    if (trip.vehicleId) {
+                        const vehicle = await models.vehicle.findByPk(trip.vehicleId, {
+                            where: { active: true },
+                        });
+                        if (vehicle) {
+                            await vehicle.update({ status: 'available' });
+                        }
+                    }
+                },
+            },
         },
     );
     return Trip;

@@ -23,6 +23,8 @@ class EvidencephotoValidator extends CRUDValidator {
                 }),
             }).options({ stripUnknown: true }),
         );
+
+        this.routes.delete['/evidencephoto/:id/image'] = false;
     }
 }
 

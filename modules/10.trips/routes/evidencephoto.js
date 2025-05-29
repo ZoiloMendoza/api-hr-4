@@ -27,6 +27,19 @@ class EvidencephotosController extends CRUDController {
                 }
             });
         });
+
+        this.addRoute('delete', '/evidencephoto/:id/image', async (req, res) => {
+            logger.info(`Deleting evidencephoto ${req.params.id} with image`);
+            try {
+                const deleted = await this.service.deleteEvidencePhoto(req.params.id);
+                return res.json(deleted);
+            } catch (error) {
+                if (error instanceof entityErrors.EntityNotFoundError) {
+                    return res.status(404).json([error.message]);
+                }
+                res.status(500).json([error.message]);
+            }
+        });
     }
 }
 
