@@ -1,5 +1,5 @@
 const { evidencephoto } = models;
-const { CRUDService } = helpers;
+const { CRUDService, entityErrors } = helpers;
 const crypto = require('crypto');
 const S3Plugin = require('../../../server/plugins/s3');
 
@@ -16,10 +16,14 @@ class EvidencephotosService extends CRUDService {
     }
 
     async uploadEvidencePhoto(file, { evidenceId, description, actionRefId }) {
+        if (!file || !Buffer.isBuffer(file)) {
+            throw new entityErrors.EntityNotFoundError('El archivo debe ser un buffer válido');
+        }
+
         const name = `img-${crypto.randomUUID()}`;
         await this.s3.upload(name, file);
         //const imageUrl = `${process.env.S3_URL}/${name}`;
-        const created = await this.model.create({
+        const created = await this.create({
             evidenceId,
             description,
             actionRefId,

@@ -1,10 +1,11 @@
-const { evidence, evidencephoto } = models;
+const { evidence, evidencephoto, evidencetype } = models;
 const { CRUDController, SearchResult, entityErrors } = helpers;
 
 class EvidencesController extends CRUDController {
     constructor() {
         super(evidence);
         this.addRelation(evidencephoto, ['id']);
+        this.addRelation(evidencetype, ['id']);
         this.addRoute('post', '/evidence/full', async (req, res) => {
             logger.info('Creating evidence with photos');
             try {

@@ -1,4 +1,4 @@
-const { evidence, evidencephoto, trip } = models;
+const { evidence, evidencephoto, trip, evidencetype } = models;
 const { CRUDService, entityErrors } = helpers;
 
 class EvidencesService extends CRUDService {
@@ -7,20 +7,39 @@ class EvidencesService extends CRUDService {
     }
 
     async createEvidenceWithPhotos({ evidenceTypeId, tripId, evidencePhoto = [] }) {
-        const created = await this.create({ evidenceTypeId, tripId });
+        const evidenceTypeRecord = await evidencetype.findOne({
+            where: { id: evidenceTypeId, active: true },
+            attributes: ['name'],
+        });
+
+        if (!evidenceTypeRecord) {
+            throw new entityErrors.EntityNotFoundError('El tipo de evidencia especificado no existe');
+        }
+
+        let existingEvidence = await evidence.findOne({
+            where: { evidenceTypeId, tripId, active: true },
+        });
+
+        if (!existingEvidence) {
+            existingEvidence = await this.create({ evidenceTypeId, tripId });
+        }
+
         const photos = [];
         for (const photo of evidencePhoto) {
             const { description, actionRefId, imgFile } = photo;
             if (!imgFile) continue;
             const buffer = Buffer.isBuffer(imgFile) ? imgFile : Buffer.from(imgFile, 'base64');
             const createdPhoto = await services.evidencephotoService.uploadEvidencePhoto(buffer, {
-                evidenceId: created.id,
+                evidenceId: existingEvidence.id,
                 description,
                 actionRefId,
             });
             photos.push(createdPhoto);
         }
-        return { ...created, photos };
+
+        const evidenceType = { name: evidenceTypeRecord.name };
+
+        return { ...existingEvidence.toJSON(), photos, evidenceType };
     }
 
     async getTripEvidenceWithPhotos(tripId, q) {
