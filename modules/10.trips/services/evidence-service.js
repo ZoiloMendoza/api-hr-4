@@ -1,5 +1,5 @@
-const { evidence } = models;
-const { CRUDService } = helpers;
+const { evidence, evidencephoto, trip } = models;
+const { CRUDService, entityErrors } = helpers;
 
 class EvidencesService extends CRUDService {
     constructor() {
@@ -21,6 +21,37 @@ class EvidencesService extends CRUDService {
             photos.push(createdPhoto);
         }
         return { ...created, photos };
+    }
+
+    async getTripEvidenceWithPhotos(tripId, q) {
+        const tripRecord = await trip.findByPk(tripId, {
+            where: { active: true },
+        });
+
+        if (!tripRecord) {
+            throw new entityErrors.EntityNotFoundError('El viaje especificado no existe');
+        }
+
+        const includeOpts = [
+            {
+                model: evidencephoto,
+                as: 'photos',
+                attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] },
+                where: { active: true },
+                required: false,
+            },
+        ];
+
+        const { rows, count } = await this.findAndCountAllCustom({
+            include: includeOpts,
+            where: { tripId },
+            offset: q.start,
+            limit: q.limit,
+            order: [[q.orderBy, q.order]],
+            filter: q.filter,
+        });
+
+        return { rows, count };
     }
 }
 module.exports = new EvidencesService();
