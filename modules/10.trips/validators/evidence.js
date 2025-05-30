@@ -22,6 +22,7 @@ class EvidenceValidator extends CRUDValidator {
                     .required(),
             }),
         );
+        this.routes.get['/trip/:id/evidence-with-photo'] = false;
     }
 }
 
