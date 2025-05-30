@@ -125,12 +125,12 @@ class CRUDService extends BaseService {
                                 return this.toJson(created);
                             }
                             throw new entityErrors.DuplicateEntityError(
-                                i18n.__('duplicate entity inactive', conflict.id, fieldKeys.join(', '))
+                                i18n.__('duplicate entity inactive', conflict.id, fieldKeys.join(', ')),
                             );
                         } else {
                             // Ya existe y está activo
                             throw new entityErrors.DuplicateEntityError(
-                                i18n.__('duplicate entity active', conflict.id, fieldKeys.join(', '))
+                                i18n.__('duplicate entity active', conflict.id, fieldKeys.join(', ')),
                             );
                         }
                     }
@@ -348,11 +348,11 @@ class CRUDService extends BaseService {
                         const fieldKeys = Object.keys(fields);
                         if (conflict.active === false) {
                             throw new entityErrors.DuplicateEntityError(
-                                i18n.__('duplicate entity inactive', conflict.id, fieldKeys.join(', '))
+                                i18n.__('duplicate entity inactive', conflict.id, fieldKeys.join(', ')),
                             );
                         } else {
                             throw new entityErrors.DuplicateEntityError(
-                                i18n.__('duplicate entity active', conflict.id, fieldKeys.join(', '))
+                                i18n.__('duplicate entity active', conflict.id, fieldKeys.join(', ')),
                             );
                         }
                     }
@@ -441,9 +441,7 @@ class CRUDService extends BaseService {
                     case 'RESTRICT': {
                         const count = await targetModel.count({ where });
                         if (count > 0) {
-                            throw new entityErrors.DeleteRestrictionError(
-                                i18n.__('delete.restricted', relationName),
-                            );
+                            throw new entityErrors.DeleteRestrictionError(i18n.__('delete.restricted', relationName));
                         }
                         break;
                     }
@@ -783,8 +781,6 @@ class CRUDService extends BaseService {
             throw new Error(`No association found for ${relatedModel.name}`);
         }
 
-        logger.info(`234  assoc.as  ${assoc.as}`);
-
         let result = async (id) => {
             const loggedUser = this.getLoggedUser();
             const whereM = { id: id, active: true };
@@ -795,13 +791,20 @@ class CRUDService extends BaseService {
                 const whereCondition = {
                     active: true,
                 };
+
+                // Excluir atributos no deseados
+                const excludedAttributes = ['companyId', 'active', 'createdAt', 'updatedAt'];
+                const attributes = Object.keys(relatedModel.rawAttributes).filter(
+                    (attr) => !excludedAttributes.includes(attr),
+                );
+
                 const elem = await this.model.findOne({
                     where: whereM,
                     include: [
                         {
                             model: relatedModel,
                             as: assoc.as,
-                            attributes: ['id', 'name'],
+                            attributes: attributes,
                             where: whereCondition,
                         },
                     ],
