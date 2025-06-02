@@ -15,7 +15,7 @@ class EvidenceValidator extends CRUDValidator {
                         Joi.object({
                             description: Joi.string().optional().allow(null),
                             actionRefId: Joi.string().optional().allow(null),
-                            imgFile: Joi.any().required(),
+                            imgFile: Joi.any().optional(),
                         }),
                     )
                     .min(1)
