@@ -16,12 +16,12 @@ class EvidencesService extends CRUDService {
             throw new entityErrors.EntityNotFoundError('El tipo de evidencia especificado no existe');
         }
 
-        let existingEvidence = await evidence.findOne({
+        let existingEvidence = await this.model.findOne({
             where: { evidenceTypeId, tripId, active: true },
         });
 
         if (!existingEvidence) {
-            existingEvidence = await this.create({ evidenceTypeId, tripId });
+            existingEvidence = await this.model.create({ evidenceTypeId, tripId });
         }
 
         const photos = [];
@@ -38,8 +38,8 @@ class EvidencesService extends CRUDService {
         }
 
         const evidenceType = { name: evidenceTypeRecord.name };
-
-        return { ...existingEvidence.toJSON(), photos, evidenceType };
+        let evidence = this.toJson(existingEvidence);
+        return { ...evidence, photos, evidenceType };
     }
 
     async getTripEvidenceWithPhotos(tripId, q) {

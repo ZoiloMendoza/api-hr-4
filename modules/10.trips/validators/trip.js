@@ -122,6 +122,20 @@ class TripValidator extends CRUDValidator {
                     }),
             }),
         );
+
+        this.addSchema(
+            'put',
+            '/trip/:id/status',
+            Joi.object({
+                status: Joi.string()
+                    .valid('documenting', 'emptyInTransit', 'loading', 'loadedInTransit', 'unloading', 'finished')
+                    .required()
+                    .messages({
+                        'any.required': i18n.__('error.validation.required', 'status'),
+                        'any.only': i18n.__('error.trip.validation.status.invalid', 'status'),
+                    }),
+            }),
+        );
     }
 }
 

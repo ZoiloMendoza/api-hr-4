@@ -29,6 +29,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'tripId',
                 as: 'evidences',
             });
+
+            Trip.hasMany(models.triplog, {
+                foreignKey: 'tripId',
+                as: 'statusHistory',
+            });
         }
     }
 
@@ -144,15 +149,11 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 async afterUpdate(trip, options) {
                     // If vehicle changed, release previous vehicle
-                    if (
-                        trip.vehicleId &&
-                        trip.vehicleId !== trip._previousDataValues.vehicleId
-                    ) {
+                    if (trip.vehicleId && trip.vehicleId !== trip._previousDataValues.vehicleId) {
                         if (trip._previousDataValues.vehicleId) {
-                            const prevVehicle = await models.vehicle.findByPk(
-                                trip._previousDataValues.vehicleId,
-                                { where: { active: true } },
-                            );
+                            const prevVehicle = await models.vehicle.findByPk(trip._previousDataValues.vehicleId, {
+                                where: { active: true },
+                            });
                             if (prevVehicle) {
                                 await prevVehicle.update({ status: 'available' });
                             }
@@ -168,10 +169,9 @@ module.exports = (sequelize, DataTypes) => {
 
                     // If vehicle removed
                     if (!trip.vehicleId && trip._previousDataValues.vehicleId) {
-                        const prevVehicle = await models.vehicle.findByPk(
-                            trip._previousDataValues.vehicleId,
-                            { where: { active: true } },
-                        );
+                        const prevVehicle = await models.vehicle.findByPk(trip._previousDataValues.vehicleId, {
+                            where: { active: true },
+                        });
                         if (prevVehicle) {
                             await prevVehicle.update({ status: 'available' });
                         }
@@ -183,10 +183,9 @@ module.exports = (sequelize, DataTypes) => {
                         trip._previousDataValues.active === true &&
                         trip._previousDataValues.vehicleId
                     ) {
-                        const vehicle = await models.vehicle.findByPk(
-                            trip._previousDataValues.vehicleId,
-                            { where: { active: true } },
-                        );
+                        const vehicle = await models.vehicle.findByPk(trip._previousDataValues.vehicleId, {
+                            where: { active: true },
+                        });
                         if (vehicle) {
                             await vehicle.update({ status: 'available' });
                         }

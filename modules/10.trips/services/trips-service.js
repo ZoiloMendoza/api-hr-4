@@ -1,9 +1,10 @@
-const { trip, order } = models;
+const { trip, order, triplog } = models;
 const { CRUDService, entityErrors } = helpers;
 
 class TripsService extends CRUDService {
     constructor() {
         super(trip);
+        this.statusOrder = ['documenting', 'emptyInTransit', 'loading', 'loadedInTransit', 'unloading', 'finished'];
     }
 
     async createTripWithOrders(tripData) {
@@ -57,7 +58,61 @@ class TripsService extends CRUDService {
             },
         );
 
+        await models.triplog.create({
+            tripId: newTrip.id,
+            status: 'documenting',
+        });
+
         return newTrip;
+    }
+
+    async changeTripStatus(tripId, newStatus) {
+        // Validar que el nuevo status sea válido
+        if (!this.statusOrder.includes(newStatus)) {
+            throw new entityErrors.ValidationError(`El estado "${newStatus}" no es válido`);
+        }
+
+        // Obtener el registro actual del viaje
+        const tripRecord = await trip.findByPk(tripId);
+        if (!tripRecord || !tripRecord.active) {
+            throw new entityErrors.EntityNotFoundError(`El viaje con ID ${tripId} no existe`);
+        }
+
+        // Validar que el cambio de estado sea permitido
+        const currentStatus = tripRecord.status;
+        const currentIndex = this.statusOrder.indexOf(currentStatus);
+        const newIndex = this.statusOrder.indexOf(newStatus);
+
+        if (newIndex !== currentIndex + 1) {
+            throw new entityErrors.ValidationError(
+                `No se puede cambiar el estado de "${currentStatus}" a "${newStatus}". Debe seguir el orden: ${this.statusOrder.join(
+                    ' -> ',
+                )}`,
+            );
+        }
+
+        // Actualizar el estado del viaje
+        tripRecord.status = newStatus;
+        await tripRecord.save();
+
+        // Actualizar o registrar el cambio en triplog
+        const [logEntry] = await triplog.findOrCreate({
+            where: {
+                tripId: tripRecord.id,
+                status: newStatus,
+            },
+            defaults: {
+                active: true,
+            },
+        });
+
+        // Actualizar la fecha de modificación si el registro ya existía
+        if (!logEntry.isNewRecord) {
+            logEntry.updatedAt = new Date();
+            await logEntry.save();
+        }
+
+        return tripRecord.toJSON();
     }
 }
 module.exports = new TripsService();
