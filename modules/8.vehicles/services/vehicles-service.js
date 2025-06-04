@@ -7,11 +7,11 @@ class VehiclesService extends CRUDService {
     }
 
     async getVehiclesWithOperatorsAndEmployees(q) {
-        const items = await this.findAndCountAll({
+        const items = await this.findAndCountAllCustom({
             offset: q.start,
             limit: q.limit,
-            filter: {
-                ...q.filter,
+            filter: q.filter,
+            where: {
                 status: 'available',
             },
             order: [[q.orderBy, q.order]],

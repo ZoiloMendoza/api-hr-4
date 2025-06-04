@@ -5,10 +5,20 @@ class TripsService extends CRUDService {
     constructor() {
         super(trip);
         this.statusOrder = ['documenting', 'emptyInTransit', 'loading', 'loadedInTransit', 'unloading', 'finished'];
+        this.statusOrder_ = [
+            'documentando',
+            'vacío en tránsito',
+            'cargando',
+            'cargado en tránsito',
+            'descargando',
+            'finalizado',
+        ];
     }
 
     async createTripWithOrders(tripData) {
-        const { orders, ...tripDetails } = tripData;
+        const { vehicleId, orders, ...tripDetails } = tripData;
+
+        await this.validateVehicleAndOperator(vehicleId);
 
         if (!Array.isArray(orders) || orders.length === 0) {
             throw new entityErrors.GenericError('Debe tener al menos un pedido');
@@ -58,12 +68,12 @@ class TripsService extends CRUDService {
             },
         );
 
-        await models.triplog.create({
+        await triplog.create({
             tripId: newTrip.id,
             status: 'documenting',
         });
 
-        return newTrip;
+        return newTrip.toJSON();
     }
 
     async changeTripStatus(tripId, newStatus) {
@@ -84,11 +94,12 @@ class TripsService extends CRUDService {
         const newIndex = this.statusOrder.indexOf(newStatus);
 
         if (newIndex !== currentIndex + 1) {
-            throw new entityErrors.ValidationError(
-                `No se puede cambiar el estado de "${currentStatus}" a "${newStatus}". Debe seguir el orden: ${this.statusOrder.join(
-                    ' -> ',
-                )}`,
-            );
+            // Obtener mensaje personalizado para el error de transición
+            const customMessage = `No se puede cambiar el estado. Debe seguir el orden: ${this.statusOrder_.join(
+                ' -> ',
+            )}`;
+
+            throw new entityErrors.GenericError(customMessage);
         }
 
         // Actualizar el estado del viaje
@@ -113,6 +124,33 @@ class TripsService extends CRUDService {
         }
 
         return tripRecord.toJSON();
+    }
+
+    async validateVehicleAndOperator(vehicleId) {
+        const vehicle = await models.vehicle.findByPk(vehicleId, {
+            include: [
+                {
+                    model: models.operator,
+                    as: 'operator',
+                },
+            ],
+        });
+
+        if (!vehicle || !vehicle.active) {
+            throw new entityErrors.EntityNotFoundError(`El vehículo con ID ${vehicleId} no existe o no está activo`);
+        }
+
+        if (vehicle.status !== 'available') {
+            throw new entityErrors.EntityNotFoundError(`El vehículo con ID ${vehicleId} no está disponible`);
+        }
+
+        if (!vehicle.operator || !vehicle.operator.active) {
+            throw new entityErrors.EntityNotFoundError(
+                `El vehículo con ID ${vehicleId} no tiene un operador asignado o el operador no está activo`,
+            );
+        }
+
+        return vehicle;
     }
 }
 module.exports = new TripsService();

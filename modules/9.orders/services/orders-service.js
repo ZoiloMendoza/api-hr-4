@@ -10,7 +10,7 @@ class OrdersService extends CRUDService {
         // Obtener los segmentos asociados a la ruta
         const rt = await route.findByPk(routeId, {
             where: {
-                active: true, // Filtrar rutas activas
+                active: true,
             },
             include: [
                 {
@@ -108,7 +108,17 @@ class OrdersService extends CRUDService {
                     },
                 ],
             },
-            include: [],
+            include: [
+                {
+                    model: models.client,
+                    as: 'client',
+                    attributes: { exclude: ['active', 'createdAt', 'updatedAt', 'companyId'] },
+                    where: {
+                        active: true,
+                    },
+                    required: true,
+                },
+            ],
             offset: q.start,
             limit: q.limit,
             order: [[q.orderBy, q.order]],
