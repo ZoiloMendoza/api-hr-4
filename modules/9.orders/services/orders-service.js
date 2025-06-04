@@ -125,7 +125,7 @@ class OrdersService extends CRUDService {
         });
 
         if (!orders.rows.length) {
-            throw new entityErrors.GenericError('No se encontraron pedidos para esta ruta');
+            throw new entityErrors.GenericError('No se encontraron pedido disponibles para esta ruta');
         }
 
         return { rows: orders.rows, count: orders.count };

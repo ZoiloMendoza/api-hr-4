@@ -4,13 +4,22 @@ const { CRUDService, entityErrors } = helpers;
 class TripsService extends CRUDService {
     constructor() {
         super(trip);
-        this.statusOrder = ['documenting', 'emptyInTransit', 'loading', 'loadedInTransit', 'unloading', 'finished'];
+        this.statusOrder = [
+            'documenting',
+            'emptyInTransit',
+            'loading',
+            'loadedInTransit',
+            'unloading',
+            'returningEmpty',
+            'finished',
+        ];
         this.statusOrder_ = [
             'documentando',
             'vacío en tránsito',
             'cargando',
             'cargado en tránsito',
             'descargando',
+            'regresando vacío',
             'finalizado',
         ];
     }
@@ -54,7 +63,7 @@ class TripsService extends CRUDService {
         const newCode = lastCode + 1;
         const tripCode = `Her-${newCode.toString().padStart(3, '0')}`; // Formato Her-001
 
-        const newTrip = await this.create({ ...tripDetails, tripCode });
+        const newTrip = await this.create({ ...tripDetails, tripCode, vehicleId });
 
         await order.update(
             {
@@ -68,12 +77,14 @@ class TripsService extends CRUDService {
             },
         );
 
-        await triplog.create({
+        const tripLogs = this.statusOrder.map((status, index) => ({
             tripId: newTrip.id,
-            status: 'documenting',
-        });
+            status,
+        }));
 
-        return newTrip.toJSON();
+        await triplog.bulkCreate(tripLogs);
+
+        return newTrip;
     }
 
     async changeTripStatus(tripId, newStatus) {
@@ -86,6 +97,26 @@ class TripsService extends CRUDService {
         const tripRecord = await trip.findByPk(tripId);
         if (!tripRecord || !tripRecord.active) {
             throw new entityErrors.EntityNotFoundError(`El viaje con ID ${tripId} no existe`);
+        }
+
+        // Verificar si los estados están registrados en `triplog`
+        const existingLogs = await triplog.findAll({
+            where: {
+                tripId,
+                active: true,
+            },
+        });
+
+        const existingStatuses = existingLogs.map((log) => log.status);
+
+        // Registrar los estados faltantes si no están en `triplog`
+        const missingStatuses = this.statusOrder.filter((status) => !existingStatuses.includes(status));
+        if (missingStatuses.length > 0) {
+            const missingLogs = missingStatuses.map((status) => ({
+                tripId,
+                status,
+            }));
+            await triplog.bulkCreate(missingLogs);
         }
 
         // Validar que el cambio de estado sea permitido
@@ -106,22 +137,20 @@ class TripsService extends CRUDService {
         tripRecord.status = newStatus;
         await tripRecord.save();
 
-        // Actualizar o registrar el cambio en triplog
-        const [logEntry] = await triplog.findOrCreate({
+        // Actualizar la fecha de modificación en `triplog` para el nuevo estado
+        const logEntry = await triplog.findOne({
             where: {
                 tripId: tripRecord.id,
                 status: newStatus,
-            },
-            defaults: {
                 active: true,
             },
         });
 
-        // Actualizar la fecha de modificación si el registro ya existía
-        if (!logEntry.isNewRecord) {
-            logEntry.updatedAt = new Date();
-            await logEntry.save();
+        if (!logEntry) {
+            throw new entityErrors.GenericError(`No se encontró el registro para el estado "${newStatus}"`);
         }
+
+        await logEntry.update({ updatedAt: new Date() });
 
         return tripRecord.toJSON();
     }
