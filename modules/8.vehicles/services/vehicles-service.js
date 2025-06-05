@@ -55,7 +55,7 @@ class VehiclesService extends CRUDService {
                         {
                             model: models.employee,
                             as: 'employee',
-                            attributes: ['firstName', 'lastName'],
+                            attributes: ['firstName', 'lastName', 'phoneOffice', 'phoneMobile', 'rfc'],
                         },
                     ],
                 },
