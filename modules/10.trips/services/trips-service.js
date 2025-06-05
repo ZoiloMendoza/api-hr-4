@@ -24,6 +24,14 @@ class TripsService extends CRUDService {
         ];
     }
 
+    async update(id, data) {
+        const currentTrip = await this._readById(id);
+        if (data.vehicleId && data.vehicleId !== currentTrip.vehicleId) {
+            await this.validateVehicleAndOperator(data.vehicleId);
+        }
+        return super.update(id, data);
+    }
+
     async createTripWithOrders(tripData) {
         const { vehicleId, orders, ...tripDetails } = tripData;
 
@@ -41,17 +49,20 @@ class TripsService extends CRUDService {
                 )}`,
             );
         }
-
+        const loggedUser = this.getLoggedUser();
         const existingOrders = await order.findAll({
             where: {
                 id: orders,
                 status: 'pending',
                 active: true,
+                tripId: null,
             },
         });
 
-        if (existingOrders.length !== orders.length) {
-            throw new entityErrors.GenericError('Algunos pedidos no están disponibles, seleccione otros');
+        const invalidOrder = existingOrders.length !== orders.length;
+
+        if (invalidOrder) {
+            throw new entityErrors.GenericError('Algunos pedidos no están disponibles');
         }
 
         // Generar el tripCode único
@@ -180,6 +191,14 @@ class TripsService extends CRUDService {
         }
 
         return vehicle;
+    }
+
+    async update(id, data) {
+        const currentTrip = await this._readById(id);
+        if (data.vehicleId && data.vehicleId !== currentTrip.vehicleId) {
+            await this.validateVehicleAndOperator(data.vehicleId);
+        }
+        return super.update(id, data);
     }
 }
 module.exports = new TripsService();

@@ -177,18 +177,24 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // If trip deactivated
+                    // If trip finished, release vehicle and update orders only once
                     if (
-                        trip.active === false &&
-                        trip._previousDataValues.active === true &&
-                        trip._previousDataValues.vehicleId
+                        trip.status === 'finished' &&
+                        trip._previousDataValues.status !== 'finished'
                     ) {
-                        const vehicle = await models.vehicle.findByPk(trip._previousDataValues.vehicleId, {
-                            where: { active: true },
-                        });
-                        if (vehicle) {
-                            await vehicle.update({ status: 'available' });
+                        if (trip.vehicleId) {
+                            const vehicle = await models.vehicle.findByPk(trip.vehicleId, {
+                                where: { active: true },
+                            });
+                            if (vehicle) {
+                                await vehicle.update({ status: 'available' });
+                            }
                         }
+
+                        await models.order.update(
+                            { status: 'delivered' },
+                            { where: { tripId: trip.id } },
+                        );
                     }
                 },
             },
