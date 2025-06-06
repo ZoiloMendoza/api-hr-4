@@ -793,7 +793,7 @@ class CRUDService extends BaseService {
                 };
 
                 // Excluir atributos no deseados
-                const excludedAttributes = ['companyId', 'active', 'createdAt', 'updatedAt'];
+                const excludedAttributes = ['companyId', 'active'];
                 const attributes = Object.keys(relatedModel.rawAttributes).filter(
                     (attr) => !excludedAttributes.includes(attr),
                 );

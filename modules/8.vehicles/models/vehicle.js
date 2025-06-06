@@ -1,5 +1,6 @@
 'use strict';
 const { EntityNotFoundError } = require('../../../shared/helpers/entity-errors');
+const { Op } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
     class Vehicle extends helpers.CRUDModel {
         static associate(models) {
@@ -93,7 +94,9 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
                 },
+                // Hook para validar antes de actualizar un vehículo
                 async beforeUpdate(vehicle, options) {
+                    // Validar que el operador no esté asignado a otro vehículo activo
                     if (vehicle.operatorId && vehicle.operatorId !== vehicle._previousDataValues.operatorId) {
                         const existingVehicle = await models.vehicle.findOne({
                             where: { operatorId: vehicle.operatorId, active: true },
@@ -103,10 +106,10 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // If status is being set to 'available', ensure there are no active trips
+                    // Validar que el vehículo no tenga viajes activos antes de cambiar su estado a available
                     if (vehicle.status === 'available' && vehicle._previousDataValues.status !== 'available') {
                         const activeTrip = await models.trip.findOne({
-                            where: { vehicleId: vehicle.id, active: true },
+                            where: { vehicleId: vehicle.id, active: true, status: { [Op.not]: 'finished' } },
                         });
                         if (activeTrip) {
                             throw new EntityNotFoundError(
@@ -119,6 +122,7 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 // Hook para actualizar el estado del operador después de asignarlo a un vehículo
                 async afterCreate(vehicle, options) {
+                    // Si se asigna un operador, actualizar su estado a 'unavailable'
                     if (vehicle.operatorId) {
                         const operator = await models.operator.findByPk(vehicle.operatorId, {
                             where: { active: true },
@@ -132,11 +136,7 @@ module.exports = (sequelize, DataTypes) => {
                 async afterUpdate(vehicle, options) {
                     // Si el vehículo se desactiva, liberar al operador y eliminar la asignación
                     // para no violar la unicidad del campo operatorId en vehículos activos
-                    if (
-                        vehicle._previousDataValues.active &&
-                        vehicle.active === false &&
-                        vehicle.operatorId
-                    ) {
+                    if (vehicle._previousDataValues.active && vehicle.active === false && vehicle.operatorId) {
                         await vehicle.update({ operatorId: null }, { hooks: false });
                     }
                     // Si cambia el operador, actualizar el estado del operador anterior a 'available'

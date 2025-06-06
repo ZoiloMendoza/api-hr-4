@@ -5,64 +5,64 @@ module.exports = {
         parameters: 'CASCADE',
         vehicles: 'CASCADE',
         trips: 'CASCADE',
-        clients: 'CASCADE'
+        clients: 'CASCADE',
     },
     user: {
         roles: 'CASCADE',
-        client: 'SET_NULL'
+        client: 'SET_NULL',
     },
     client: {
         orders: 'CASCADE',
         ordersAsOrigin: 'CASCADE',
         ordersAsDestination: 'CASCADE',
-        users: 'SET_NULL'
+        users: 'SET_NULL',
     },
     catalog: {
         orders: 'RESTRICT',
-        productsOrders: 'CASCADE'
+        productsOrders: 'CASCADE',
     },
     order: {
-        productsOrders: 'CASCADE'
+        productsOrders: 'CASCADE',
     },
     employee: {
         operator: 'CASCADE',
-        user: 'SET_NULL'
+        user: 'SET_NULL',
     },
     operator: {
-        vehicles: 'RESTRICT'
+        vehicles: 'RESTRICT',
     },
     vehicle: {
-        trips: 'CASCADE'
+        trips: 'RESTRICT',
     },
     paymenttype: {
-        employees: 'RESTRICT'
+        employees: 'RESTRICT',
     },
     trip: {
-        orders: 'CASCADE',
-        evidences: 'CASCADE'
+        orders: 'RESTRICT',
+        evidences: 'RESTRICT',
     },
     evidencetype: {
-        evidences: 'CASCADE'
+        evidences: 'RESTRICT',
     },
     evidence: {
-        photos: 'CASCADE'
+        photos: 'CASCADE',
     },
     country: {
-        directions: 'CASCADE'
+        directions: 'CASCADE',
     },
     location: {
         originSegments: 'SET_NULL',
         destinationSegments: 'SET_NULL',
-        segments: 'CASCADE'
+        segments: 'CASCADE',
     },
     segment: {
-        routes: 'CASCADE',
-        locations: 'CASCADE',
+        routes: 'RESTRICT',
+        locations: 'RESTRICT',
         originLocation: 'SET_NULL',
-        destinationLocation: 'SET_NULL'
+        destinationLocation: 'SET_NULL',
     },
     route: {
         segments: 'CASCADE',
-        trips: 'RESTRICT'
-    }
+        trips: 'RESTRICT',
+    },
 };

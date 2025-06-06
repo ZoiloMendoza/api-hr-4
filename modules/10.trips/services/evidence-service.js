@@ -38,8 +38,8 @@ class EvidencesService extends CRUDService {
         }
 
         const evidenceType = { name: evidenceTypeRecord.name };
-
-        return { ...existingEvidence.toJSON(), photos, evidenceType };
+        let evidence = this.toJson(existingEvidence);
+        return { ...evidence, photos, evidenceType };
     }
 
     async getTripEvidenceWithPhotos(tripId, q) {

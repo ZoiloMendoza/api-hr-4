@@ -432,10 +432,8 @@ class CRUDController extends BaseController {
     addPost() {
         this.addRoute('post', `/${this.modelName}`, async (req, res) => {
             logger.info(`Creating ${this.modelName} ${req.input.name}`);
-            const confirm =
-                req.query.confirm === 'true' || req.query.confirm === '1';
-            const replace =
-                req.query.replace === 'true' || req.query.replace === '1';
+            const confirm = req.query.confirm === 'true' || req.query.confirm === '1';
+            const replace = req.query.replace === 'true' || req.query.replace === '1';
             try {
                 const newItem = await this.service.create(req.input, confirm, replace);
                 return res.json(newItem);

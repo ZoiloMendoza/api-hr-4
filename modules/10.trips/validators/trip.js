@@ -9,7 +9,15 @@ class TripValidator extends CRUDValidator {
         this.addFieldValidation(
             'status',
             Joi.string()
-                .valid('documenting', 'emptyInTransit', 'loading', 'loadedInTransit', 'unloading', 'finished')
+                .valid(
+                    'documenting',
+                    'emptyInTransit',
+                    'loading',
+                    'loadedInTransit',
+                    'unloading',
+                    'returningEmpty',
+                    'finished',
+                )
                 .required()
                 .messages({
                     'any.required': i18n.__('error.validation.required', 'status'),
@@ -119,6 +127,28 @@ class TripValidator extends CRUDValidator {
                         'array.base': i18n.__('error.validation.array', 'orders'),
                         'array.min': i18n.__('error.validation.min', 'orders'),
                         'any.required': i18n.__('error.validation.required', 'orders'),
+                    }),
+            }),
+        );
+
+        this.addSchema(
+            'put',
+            '/trip/:id/status',
+            Joi.object({
+                status: Joi.string()
+                    .valid(
+                        'documenting',
+                        'emptyInTransit',
+                        'loading',
+                        'loadedInTransit',
+                        'unloading',
+                        'returningEmpty',
+                        'finished',
+                    )
+                    .required()
+                    .messages({
+                        'any.required': i18n.__('error.validation.required', 'status'),
+                        'any.only': i18n.__('error.trip.validation.status.invalid', 'status'),
                     }),
             }),
         );
