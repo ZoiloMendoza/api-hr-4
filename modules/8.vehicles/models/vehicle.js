@@ -109,7 +109,7 @@ module.exports = (sequelize, DataTypes) => {
                     // Validar que el vehículo no tenga viajes activos antes de cambiar su estado a available
                     if (vehicle.status === 'available' && vehicle._previousDataValues.status !== 'available') {
                         const activeTrip = await models.trip.findOne({
-                            where: { vehicleId: vehicle.id, active: true },
+                            where: { vehicleId: vehicle.id, active: true, status: { [Op.not]: 'finished' } },
                         });
                         if (activeTrip) {
                             throw new EntityNotFoundError(
