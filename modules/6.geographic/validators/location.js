@@ -15,7 +15,7 @@ class LocationValidator extends CRUDValidator {
         );
         this.addSchema(
             'put',
-            '/location-inegi/:id',
+            '/location-google/:id',
             Joi.object({
                 name: Joi.string().max(100).required().messages({
                     'string.base': 'El nombre debe ser una cadena de texto.',
@@ -69,6 +69,29 @@ class LocationValidator extends CRUDValidator {
         this.addSchema(
             'post',
             '/location-nominatim-search',
+            Joi.object({
+                value: Joi.string().min(3).required().messages({
+                    'string.base': 'El valor debe ser una cadena de texto.',
+                    'string.min': 'El valor debe tener al menos 3 caracteres.',
+                    'any.required': 'El valor es obligatorio.',
+                }),
+            }),
+        );
+
+        this.addSchema(
+            'post',
+            '/address-autocomplete',
+            Joi.object({
+                value: Joi.string().min(3).required().messages({
+                    'string.base': 'El valor debe ser una cadena de texto.',
+                    'string.min': 'El valor debe tener al menos 3 caracteres.',
+                    'any.required': 'El valor es obligatorio.',
+                }),
+            }),
+        );
+        this.addSchema(
+            'post',
+            '/address-geocoding',
             Joi.object({
                 value: Joi.string().min(3).required().messages({
                     'string.base': 'El valor debe ser una cadena de texto.',
