@@ -4,6 +4,8 @@ module.exports = (sequelize, DataTypes) => {
     class Auditlog extends helpers.CRUDModel {
         static associate(models) {
             Auditlog.belongsTo(models.user, { foreignKey: 'userId', as: 'user' });
+
+            Auditlog.belongsTo(models.company, { foreignKey: 'companyId', as: 'company' });
         }
     }
 
@@ -32,6 +34,20 @@ module.exports = (sequelize, DataTypes) => {
             userId: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
+            },
+            username: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            companyId: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'Companies',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             },
             active: {
                 type: DataTypes.BOOLEAN,
