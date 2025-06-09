@@ -1,7 +1,8 @@
 const { location } = models;
 const { CRUDService, entityErrors } = helpers;
-const { buscarLinea, buscarDestino } = require('../helpers/api-inegi');
+const { buscarLinea, buscarDestino } = require('../helpers/api-google');
 const { searchPlace } = require('../helpers/api-nominatim');
+const { placesAutocomplete, geocodingAddress, validateLocation } = require('../helpers/api-google');
 const NodeCache = require('node-cache');
 class LocationsService extends CRUDService {
     constructor() {
@@ -9,8 +10,8 @@ class LocationsService extends CRUDService {
         this.cache = new NodeCache({ stdTTL: 2592000 }); // 1 mes
     }
 
-    async updateLocationWithINEGI(id, body) {
-        const { scale = 100000, lng, lat, name, description, city, state } = body;
+    async updateLocationWithGOOGLE(id, body) {
+        const { lng, lat, name, description, city, state } = body;
 
         const currentLocation = await this.readById(id);
 
@@ -18,46 +19,29 @@ class LocationsService extends CRUDService {
             throw new entityErrors.GenericError(`No se encontró la ubicación con el ID ${id}.`);
         }
 
-        const cacheKey = `inegi:update:${scale}:${lng}:${lat}`;
-        let responseInegi = this.cache.get(cacheKey);
+        if(lng && lat){
+            const cacheKey = `google-location:update:${lat}:${lng}`;
+            let isInvalidLocationResponse = this.cache.get(cacheKey);
+            
+            if (!isInvalidLocationResponse) {
+                isInvalidLocationResponse = await validateLocation(`${lat},${lng}`);
+                this.cache.set(cacheKey, isInvalidLocationResponse);
+            }
 
-        if (!responseInegi) {
-            responseInegi = await buscarLinea(scale, lng, lat);
-            this.cache.set(cacheKey, responseInegi);
+            if(isInvalidLocationResponse.isInvalidLocation){
+                throw new entityErrors.GenericError("No se encontró línea de red en las coordenadas enviadas, intenta con otras coordenadas");
+            }
         }
 
-        let locationData = null;
-        const { data } = responseInegi;
+        let locationData = {
+            name,
+            description,
+            lat,
+            lng,
+            city,
+            state,
+        };
 
-        if (data) {
-            const { geojson, source, id_routing_net, nombre, target } = data;
-            locationData = {
-                name,
-                description,
-                lat,
-                lng,
-                city,
-                state,
-                routingLineId: id_routing_net,
-                routingSourceId: source,
-                routingTargetId: target,
-                roadName: nombre,
-                scale,
-                nearestPointGeoString: geojson,
-            };
-        } else {
-            locationData = {
-                name,
-                description,
-                lat,
-                lng,
-                scale,
-                city,
-                state,
-            };
-        }
-
-        delete locationData.id;
         return this.update(id, locationData);
     }
 
@@ -89,15 +73,30 @@ class LocationsService extends CRUDService {
     }
 
     async searchLocationByNominatim(value) {
-        const cacheKey = `nominatim:search:${value}`;
-        let responseNominatim = this.cache.get(cacheKey);
+    }
 
-        if (!responseNominatim) {
-            responseNominatim = await searchPlace(value);
-            this.cache.set(cacheKey, responseNominatim);
+    async searchLocationByGoogle(value) {
+        const cacheKey = `google:places:autocomplete:${value}`;
+        let responseAutocomplete = this.cache.get(cacheKey);
+
+        if (!responseAutocomplete) {
+            responseAutocomplete = await placesAutocomplete(value);
+            this.cache.set(cacheKey, responseAutocomplete);
         }
 
-        return responseNominatim;
+        return responseAutocomplete;
+    }
+
+    async geocodingAddressByGoogle(value) {
+        const cacheKey = `google:v3:geocode:${value}`;
+        let responseGeocodingAddress = this.cache.get(cacheKey);
+
+        if (!responseGeocodingAddress) {
+            responseGeocodingAddress = await geocodingAddress(value);
+            this.cache.set(cacheKey, responseGeocodingAddress);
+        }
+
+        return responseGeocodingAddress;
     }
 }
 
