@@ -33,6 +33,8 @@ class ModelHelper {
                     return 'Date';
                 case 'VIRTUAL':
                     return null;
+                case 'JSON':
+                    return null;
                 case 'JSON_CRUD':
                     this.jsonTypes.push(attr);
                     //JSON_CRUD IS NOT A BASIC TYPE
@@ -40,9 +42,7 @@ class ModelHelper {
                 case 'ENUM':
                     return 'String'; //TODO: Validar si tiene sentido
                 default:
-                    throw new Error(
-                        `Unsupported attribute type: ${attr.type.key}`,
-                    );
+                    throw new Error(`Unsupported attribute type: ${attr.type.key}`);
             }
         }
         return null;
@@ -81,18 +81,14 @@ class ModelHelper {
                         );
 
                         //if ((!model.isExcluded) || (!model.isExcluded(attrName))) {
-                        if (
-                            !this.typesVector[basicType][
-                                model.name.toLowerCase()
-                            ]
-                        ) {
-                            this.typesVector[basicType][
-                                model.name.toLowerCase()
-                            ] = [];
+                        if (!this.typesVector[basicType][model.name.toLowerCase()]) {
+                            this.typesVector[basicType][model.name.toLowerCase()] = [];
                         }
-                        this.typesVector[basicType][
-                            model.name.toLowerCase()
-                        ].push({ name: attrName, json: false, basic: true });
+                        this.typesVector[basicType][model.name.toLowerCase()].push({
+                            name: attrName,
+                            json: false,
+                            basic: true,
+                        });
                         //}
                         edges.push({
                             from: model.name.toLowerCase(),
@@ -106,8 +102,7 @@ class ModelHelper {
             if (model.associations) {
                 Object.keys(model.associations).forEach((assocName) => {
                     const assoc = model.associations[assocName];
-                    const targetName =
-                        model.associations[assocName].target.name.toLowerCase();
+                    const targetName = model.associations[assocName].target.name.toLowerCase();
 
                     if (!targetName) return;
 
@@ -139,11 +134,8 @@ class ModelHelper {
                     );
                     //if ((!model.isExcluded) || (!model.isExcluded(assocName))) {
                     this.basicTypes.forEach((bType) => {
-                        if (
-                            !this.typesVector[bType][model.name.toLowerCase()]
-                        ) {
-                            this.typesVector[bType][model.name.toLowerCase()] =
-                                [];
+                        if (!this.typesVector[bType][model.name.toLowerCase()]) {
+                            this.typesVector[bType][model.name.toLowerCase()] = [];
                         }
                         this.typesVector[bType][model.name.toLowerCase()].push({
                             name: assocName,
@@ -164,9 +156,7 @@ class ModelHelper {
             for (let attr of this.jsonTypes) {
                 const targetName = attr.type.model.name.toLowerCase();
                 logger.trace(
-                    `Adding edge from ${model.name.toLowerCase()} to JSON  ${targetName} with name ${
-                        attr.field
-                    }`,
+                    `Adding edge from ${model.name.toLowerCase()} to JSON  ${targetName} with name ${attr.field}`,
                 );
                 //if ((!model.isExcluded) || (!model.isExcluded(attr.field))) {
                 this.basicTypes.forEach((bType) => {
@@ -229,14 +219,11 @@ class ModelHelper {
         }
         let result = [];
         try {
-            this.graph.forEachOutboundEdge(
-                fType,
-                (e, attrs, source, target) => {
-                    if (!this.basicTypes.includes(target)) {
-                        result.push({ target, attr: attrs.label });
-                    }
-                },
-            );
+            this.graph.forEachOutboundEdge(fType, (e, attrs, source, target) => {
+                if (!this.basicTypes.includes(target)) {
+                    result.push({ target, attr: attrs.label });
+                }
+            });
         } catch (e) {
             logger.error(e.message);
             return result;

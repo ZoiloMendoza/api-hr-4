@@ -153,13 +153,14 @@ class TripsService extends CRUDService {
             throw new entityErrors.GenericError(`No se encontró el registro para el estado "${newStatus}"`);
         }
 
-        await logEntry.update({ updatedAt: new Date() });
+        // Actualizar el campo `status` (y automáticamente `updatedAt`)
+        await logEntry.update({ status: newStatus });
 
         return tripRecord.toJSON();
     }
 
     async validateVehicleAndOperator(vehicleId) {
-        const loggedUser = this.getLoggedUser();//zmm
+        const loggedUser = this.getLoggedUser(); //zmm
         const vehicle = await models.vehicle.findOne({
             where: {
                 id: vehicleId,
