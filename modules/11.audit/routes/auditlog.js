@@ -3,7 +3,7 @@ const { CRUDController } = helpers;
 
 class AuditlogController extends CRUDController {
     constructor() {
-        super(auditlog);
+        super(auditlog, process.env.SYSADMIN_ROLE);
     }
 
     configApp() {

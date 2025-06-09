@@ -95,6 +95,18 @@ class CRUDService extends BaseService {
         }
         try {
             const createdRecord = await this.model.create(data);
+            if (services.auditlogService) {
+                await services.auditlogService.createLog({
+                    entityName: this.modelName,
+                    entityId: createdRecord.id,
+                    action: 'create',
+                    oldData: null,
+                    newData: createdRecord,
+                    userId: loggedUser.id,
+                    username: loggedUser.username,
+                    companyId: loggedUser.company.id,
+                });
+            }
             return this.toJson(createdRecord);
         } catch (error) {
             if (error instanceof UniqueConstraintError) {
@@ -333,6 +345,18 @@ class CRUDService extends BaseService {
         try {
             const record = await this._readById(id);
             await record.update(data);
+            if (services.auditlogService) {
+                await services.auditlogService.createLog({
+                    entityName: this.modelName,
+                    entityId: record.id,
+                    action: 'update',
+                    oldData: record._previousDataValues,
+                    newData: record.dataValues,
+                    userId: loggedUser.id,
+                    username: loggedUser.username,
+                    companyId: loggedUser.company.id,
+                });
+            }
             const updatedRecord = await this._readById(id);
             return this.toJson(updatedRecord);
         } catch (error) {
@@ -408,6 +432,7 @@ class CRUDService extends BaseService {
     }
 
     async delete(id) {
+        const loggedUser = this.getLoggedUser();
         try {
             const record = await this._readById(id);
 
@@ -460,6 +485,18 @@ class CRUDService extends BaseService {
 
             record.active = false;
             await record.save();
+            if (services.auditlogService) {
+                await services.auditlogService.createLog({
+                    entityName: this.modelName,
+                    entityId: record.id,
+                    action: 'delete',
+                    oldData: record._previousDataValues,
+                    newData: record.dataValues,
+                    userId: loggedUser.id,
+                    username: loggedUser.username,
+                    companyId: loggedUser.company.id,
+                });
+            }
             return this.toJson(record);
         } catch (error) {
             logger.debug(error);
@@ -510,6 +547,18 @@ class CRUDService extends BaseService {
 
             record.active = true;
             await record.save();
+            if (services.auditlogService) {
+                await services.auditlogService.createLog({
+                    entityName: this.modelName,
+                    entityId: record.id,
+                    action: 'restore',
+                    oldData: record._previousDataValues,
+                    newData: record.dataValues,
+                    userId: loggedUser.id,
+                    username: loggedUser.username,
+                    companyId: loggedUser.company.id,
+                });
+            }
             return this.toJson(record);
         } catch (error) {
             logger.debug(error);
