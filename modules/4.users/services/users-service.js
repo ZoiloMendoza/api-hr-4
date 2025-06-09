@@ -1,5 +1,5 @@
 'use strict';
-const { user, role,  company } = models;
+const { user, role, company } = models;
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { CRUDService, entityErrors } = helpers;
@@ -15,14 +15,14 @@ class UserService extends CRUDService {
     generatePassword(length = 10) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}<>?';
         let password = '';
-    
+
         for (let i = 0; i < length; i++) {
             const randomIndex = crypto.randomInt(0, chars.length);
             password += chars[randomIndex];
         }
-       // logger.info(`Generated password: ${password}`);
+        // logger.info(`Generated password: ${password}`);
         return password;
-    }    
+    }
 
     toJson(u) {
         const json = super.toJson(u);
@@ -45,14 +45,16 @@ class UserService extends CRUDService {
             active: true,
         };
         const uDb = await user.create(u);
-        const roles = await role.findAll    ({
-            where: { name: { 
-                [Op.in]: [process.env.COMPANYADMIN_ROLE, process.env.SYSADMIN_ROLE] 
-            }},
+        const roles = await role.findAll({
+            where: {
+                name: {
+                    [Op.in]: [process.env.COMPANYADMIN_ROLE, process.env.SYSADMIN_ROLE]
+                }
+            },
         });
         logger.info(`Roles: ${roles}`);
-        await uDb.addRoles(roles);    
-        return {user: this.toJson(uDb), password: password};
+        await uDb.addRoles(roles);
+        return { user: this.toJson(uDb), password: password };
     }
 
     async createUser(u) {
@@ -62,7 +64,7 @@ class UserService extends CRUDService {
 
     async requestPasswordReset(email) {
         const u = await this.getUserByUsername(email);
-        
+
         if (!u) {
             throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'Usuario'));
         }
@@ -75,34 +77,34 @@ class UserService extends CRUDService {
         return email;
     }
 
- 
-    async getUserByUsername(username, auth=true) {
-        
-        const   where = { username: username, active: true };
-        
+
+    async getUserByUsername(username, auth = true) {
+
+        const where = { username: username, active: true };
+
         if (auth) {
             const loggedUser = await this.getLoggedUser();
             where.companyId = loggedUser.company.id;
         }
 
-        return  user.findOne({
-                where,
-                include: [{
-                    model: role,
-                    through: { attributes: [] },
-                    attributes: ['name'],
-                    as: 'roles'
-                },
-                {
-                    model: company,
-                    attributes: ['id', 'name'],
-                    as: 'company',
-                }
+        return user.findOne({
+            where,
+            include: [{
+                model: role,
+                through: { attributes: [] },
+                attributes: ['name'],
+                as: 'roles'
+            },
+            {
+                model: company,
+                attributes: ['id', 'name'],
+                as: 'company',
+            }
             ]
-            })
+        })
     }
 
-    async getUserByUsernameAndPassword(username, password, auth=true) {
+    async getUserByUsernameAndPassword(username, password, auth = true) {
         const u = await this.getUserByUsername(username, auth);
         if (!u) {
             return null;
@@ -115,7 +117,7 @@ class UserService extends CRUDService {
 
     async changePassword(userId, newPassword) {
         const loggedUser = this.getLoggedUser();
-        const u = await User.findOne({userId, companyId: loggedUser.company.id});
+        const u = await user.findOne({ userId, companyId: loggedUser.company.id });
         if (!u) {
             throw new entityErrors.EntityNotFoundError(
                 i18n.__('entity not found', 'Usuario'),

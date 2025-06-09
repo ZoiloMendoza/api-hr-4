@@ -8,9 +8,12 @@ class OrdersService extends CRUDService {
 
     async getOrdersForRoute(routeId, q) {
         // Obtener los segmentos asociados a la ruta
-        const rt = await route.findByPk(routeId, {
+        const loggedUser = this.getLoggedUser();//zmm
+        const rt = await route.findOne({
             where: {
+                id: routeId,
                 active: true,
+                companyId: loggedUser.company.id,
             },
             include: [
                 {

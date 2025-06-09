@@ -7,6 +7,17 @@ class EvidencesService extends CRUDService {
     }
 
     async createEvidenceWithPhotos({ evidenceTypeId, tripId, evidencePhoto = [] }) {
+
+        const loggedUser = this.getLoggedUser(); //zmm
+
+        const tripRecord = await trip.findOne({
+            where: { id: tripId, companyId: loggedUser.company.id, active: true },
+        });
+
+        if (!tripRecord) {
+            throw new entityErrors.EntityNotFoundError('El viaje especificado no existe');
+        }
+
         const evidenceTypeRecord = await evidencetype.findOne({
             where: { id: evidenceTypeId, active: true },
             attributes: ['name'],
@@ -43,10 +54,11 @@ class EvidencesService extends CRUDService {
     }
 
     async getTripEvidenceWithPhotos(tripId, q) {
-        const tripRecord = await trip.findByPk(tripId, {
-            where: { active: true },
-        });
+        const loggedUser = this.getLoggedUser(); //zmm
 
+        const tripRecord = await trip.findOne({
+            where: { id: tripId, companyId: loggedUser.company.id, active: true },
+        });
         if (!tripRecord) {
             throw new entityErrors.EntityNotFoundError('El viaje especificado no existe');
         }

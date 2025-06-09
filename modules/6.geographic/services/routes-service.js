@@ -8,7 +8,7 @@ class RoutesService extends CRUDService {
 
     async createRouteWithSegments(routeData) {
         const { segments, ...routeDetails } = routeData;
-
+        const loggedUser = this.getLoggedUser();//zmm
         if (!Array.isArray(segments) || segments.length === 0) {
             throw new entityErrors.GenericError('Debe tener al menos un tramo');
         }
@@ -32,6 +32,7 @@ class RoutesService extends CRUDService {
         const existingSegments = await models.segment.findAll({
             where: {
                 id: segmentIds,
+                companyId: loggedUser.company.id,
             },
             include: [
                 {

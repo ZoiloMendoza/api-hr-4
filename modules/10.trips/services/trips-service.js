@@ -24,14 +24,6 @@ class TripsService extends CRUDService {
         ];
     }
 
-    async update(id, data) {
-        const currentTrip = await this._readById(id);
-        if (data.vehicleId && data.vehicleId !== currentTrip.vehicleId) {
-            await this.validateVehicleAndOperator(data.vehicleId);
-        }
-        return super.update(id, data);
-    }
-
     async createTripWithOrders(tripData) {
         const { vehicleId, orders, ...tripDetails } = tripData;
 
@@ -167,7 +159,12 @@ class TripsService extends CRUDService {
     }
 
     async validateVehicleAndOperator(vehicleId) {
-        const vehicle = await models.vehicle.findByPk(vehicleId, {
+        const loggedUser = this.getLoggedUser();//zmm
+        const vehicle = await models.vehicle.findOne({
+            where: {
+                id: vehicleId,
+                companyId: loggedUser.company.id,
+            },
             include: [
                 {
                     model: models.operator,
