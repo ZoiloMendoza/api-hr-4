@@ -39,12 +39,10 @@ class VehiclesService extends CRUDService {
         return { rows: items.rows, count: items.count };
     }
     async getVehicleWithOperatorsAndEmployeesById(vehicleId) {
-        const loggedUser = this.getLoggedUser(); //zmm
         const item = await this.model.findOne({
             where: {
                 id: vehicleId,
                 active: true,
-                companyId: loggedUser.companyId,
             },
             attributes: { exclude: ['active', 'companyId', 'createdAt', 'updatedAt'] },
             include: [

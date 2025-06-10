@@ -154,7 +154,7 @@ class TripsService extends CRUDService {
         }
 
         // Actualizar el campo `status` (y automáticamente `updatedAt`)
-        await logEntry.update({ status: newStatus });
+        await logEntry.update({ statusUpdatedAt: new Date() });
 
         return tripRecord.toJSON();
     }
