@@ -119,6 +119,18 @@ class CatalogService extends BaseService {
             type,
             companyId: currentUser.company.id,
         });
+        if (services.auditlogService) {
+            await services.auditlogService.createLog({
+                entityName: this.getModelName(),
+                entityId: cat.id,
+                action: 'create',
+                oldData: null,
+                newData: cat.dataValues,
+                userId: currentUser.id,
+                username: currentUser.username,
+                companyId: currentUser.company.id,
+            });
+        }
         this.cache.del(cacheKey);
         await this.loadCatalogs(currentUser.company.id);
         return {
@@ -145,6 +157,18 @@ class CatalogService extends BaseService {
         }
 
         await cat.update(data);
+        if (services.auditlogService) {
+            await services.auditlogService.createLog({
+                entityName: this.getModelName(),
+                entityId: cat.id,
+                action: 'update',
+                oldData: cat._previousDataValues,
+                newData: cat.dataValues,
+                userId: currentUser.id,
+                username: currentUser.username,
+                companyId: currentUser.company.id,
+            });
+        }
         this.cache.del(cacheKey);
         await this.loadCatalogs(currentUser.company.id);
         return {
@@ -170,6 +194,18 @@ class CatalogService extends BaseService {
         }
         cat.active = false;
         await cat.save();
+        if (services.auditlogService) {
+            await services.auditlogService.createLog({
+                entityName: this.getModelName(),
+                entityId: cat.id,
+                action: 'delete',
+                oldData: cat._previousDataValues,
+                newData: cat.dataValues,
+                userId: currentUser.id,
+                username: currentUser.username,
+                companyId: currentUser.company.id,
+            });
+        }
         this.cache.del(cacheKey);
         await this.loadCatalogs(currentUser.company.id);
         return {

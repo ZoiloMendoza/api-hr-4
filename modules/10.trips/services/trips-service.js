@@ -24,8 +24,13 @@ class TripsService extends CRUDService {
         ];
     }
 
-    async createTripWithOrders(tripData) {
+    async createTripWithOrders(tripData, user) {
         const { vehicleId, orders, ...tripDetails } = tripData;
+
+        const loggedUser = user;
+        if (!loggedUser) {
+            throw new entityErrors.GenericError('Usuario no encontrado');
+        }
 
         await this.validateVehicleAndOperator(vehicleId);
 
@@ -41,7 +46,7 @@ class TripsService extends CRUDService {
                 )}`,
             );
         }
-        const loggedUser = this.getLoggedUser();
+
         const existingOrders = await order.findAll({
             where: {
                 id: orders,
@@ -80,6 +85,21 @@ class TripsService extends CRUDService {
             },
         );
 
+        if (services.auditlogService) {
+            for (const ord of existingOrders) {
+                await services.auditlogService.createLog({
+                    entityName: 'order',
+                    entityId: ord.id,
+                    action: 'update',
+                    oldData: { status: ord.status, tripId: ord.tripId },
+                    newData: { status: 'assigned', tripId: newTrip.id },
+                    userId: loggedUser.id,
+                    username: loggedUser.username,
+                    companyId: loggedUser.company.id,
+                });
+            }
+        }
+
         const tripLogs = this.statusOrder.map((status, index) => ({
             tripId: newTrip.id,
             status,
@@ -90,7 +110,7 @@ class TripsService extends CRUDService {
         return newTrip;
     }
 
-    async changeTripStatus(tripId, newStatus) {
+    async changeTripStatus(tripId, newStatus, user) {
         // Validar que el nuevo status sea válido
         if (!this.statusOrder.includes(newStatus)) {
             throw new entityErrors.ValidationError(`El estado "${newStatus}" no es válido`);
@@ -100,6 +120,11 @@ class TripsService extends CRUDService {
         const tripRecord = await trip.findByPk(tripId);
         if (!tripRecord || !tripRecord.active) {
             throw new entityErrors.EntityNotFoundError(`El viaje con ID ${tripId} no existe`);
+        }
+
+        const loggedUser = user;
+        if (!loggedUser) {
+            throw new entityErrors.GenericError('Usuario no encontrado');
         }
 
         // Verificar si los estados están registrados en `triplog`
@@ -137,8 +162,23 @@ class TripsService extends CRUDService {
         }
 
         // Actualizar el estado del viaje
+        const previousStatus = tripRecord.status;
         tripRecord.status = newStatus;
         await tripRecord.save();
+
+        if (services.auditlogService) {
+            const loggedUser = this.getLoggedUser();
+            await services.auditlogService.createLog({
+                entityName: 'trip',
+                entityId: tripRecord.id,
+                action: 'update',
+                oldData: { status: previousStatus },
+                newData: { status: newStatus },
+                userId: loggedUser.id,
+                username: loggedUser.username,
+                companyId: loggedUser.company.id,
+            });
+        }
 
         // Actualizar la fecha de modificación en `triplog` para el nuevo estado
         const logEntry = await triplog.findOne({
@@ -160,11 +200,9 @@ class TripsService extends CRUDService {
     }
 
     async validateVehicleAndOperator(vehicleId) {
-        const loggedUser = this.getLoggedUser(); //zmm
         const vehicle = await models.vehicle.findOne({
             where: {
                 id: vehicleId,
-                companyId: loggedUser.company.id,
             },
             include: [
                 {

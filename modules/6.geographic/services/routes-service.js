@@ -6,9 +6,13 @@ class RoutesService extends CRUDService {
         super(route);
     }
 
-    async createRouteWithSegments(routeData) {
+    async createRouteWithSegments(routeData, user) {
         const { segments, ...routeDetails } = routeData;
-        const loggedUser = this.getLoggedUser();//zmm
+        const loggedUser = user;//zmm
+
+        if (!loggedUser) {
+            throw new entityErrors.GenericError('Usuario no encontrado');
+        }
         if (!Array.isArray(segments) || segments.length === 0) {
             throw new entityErrors.GenericError('Debe tener al menos un tramo');
         }

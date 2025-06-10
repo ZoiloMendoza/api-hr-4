@@ -9,7 +9,7 @@ class RoutesController extends CRUDController {
             logger.info('Creando una nueva ruta');
             try {
                 const routeData = req.input;
-                const createdRoute = await this.service.createRouteWithSegments(routeData);
+                const createdRoute = await this.service.createRouteWithSegments(routeData, req.user);
                 return res.status(201).json(createdRoute);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {

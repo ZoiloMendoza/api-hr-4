@@ -6,10 +6,12 @@ class EvidencesService extends CRUDService {
         super(evidence);
     }
 
-    async createEvidenceWithPhotos({ evidenceTypeId, tripId, evidencePhoto = [] }) {
+    async createEvidenceWithPhotos({ evidenceTypeId, tripId, evidencePhoto = [] }, user) {
 
-        const loggedUser = this.getLoggedUser(); //zmm
-
+        const loggedUser = user; //zmm
+        if (!loggedUser) {
+            throw new entityErrors.UnauthorizedError('Usuario no encontrado');
+        }
         const tripRecord = await trip.findOne({
             where: { id: tripId, companyId: loggedUser.company.id, active: true },
         });
@@ -33,6 +35,18 @@ class EvidencesService extends CRUDService {
 
         if (!existingEvidence) {
             existingEvidence = await this.model.create({ evidenceTypeId, tripId });
+            if (services.auditlogService) {
+                await services.auditlogService.createLog({
+                    entityName: this.model.name,
+                    entityId: existingEvidence.id,
+                    action: 'create',
+                    oldData: null,
+                    newData: existingEvidence,
+                    userId: loggedUser.id,
+                    username: loggedUser.username,
+                    companyId: loggedUser.company.id,
+                });
+            }
         }
 
         const photos = [];
@@ -44,7 +58,19 @@ class EvidencesService extends CRUDService {
                 evidenceId: existingEvidence.id,
                 description,
                 actionRefId,
-            });
+            }, loggedUser);
+            if (services.auditlogService) {
+                await services.auditlogService.createLog({
+                    entityName: services.evidencephotoService.model.name,
+                    entityId: createdPhoto.id,
+                    action: 'create',
+                    oldData: null,
+                    newData: createdPhoto,
+                    userId: loggedUser.id,
+                    username: loggedUser.username,
+                    companyId: loggedUser.company.id,
+                });
+            }
             photos.push(createdPhoto);
         }
 
@@ -53,8 +79,11 @@ class EvidencesService extends CRUDService {
         return { ...evidence, photos, evidenceType };
     }
 
-    async getTripEvidenceWithPhotos(tripId, q) {
-        const loggedUser = this.getLoggedUser(); //zmm
+    async getTripEvidenceWithPhotos(tripId, q, user) {
+        const loggedUser = user; //zmm
+        if (!loggedUser) {
+            throw new entityErrors.UnauthorizedError('Usuario no encontrado');
+        }
 
         const tripRecord = await trip.findOne({
             where: { id: tripId, companyId: loggedUser.company.id, active: true },

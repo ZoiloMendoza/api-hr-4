@@ -16,6 +16,7 @@ class SegmentsController extends CRUDController {
                     destinationId,
                     isFirst,
                     segmentId,
+                    req.user
                 );
                 res.json(response);
             } catch (error) {

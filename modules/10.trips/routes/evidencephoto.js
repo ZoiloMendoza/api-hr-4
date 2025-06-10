@@ -25,7 +25,7 @@ class EvidencephotosController extends CRUDController {
                     evidenceId,
                     description,
                     actionRefId,
-                });
+                }, req.user);
                 return res.status(201).json(created);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {

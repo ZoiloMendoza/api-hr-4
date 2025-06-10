@@ -32,7 +32,7 @@ class VehiclesController extends CRUDController {
             const { vehicleId } = req.params;
 
             try {
-                const vehicle = await this.service.getVehicleWithOperatorsAndEmployeesById(vehicleId);
+                const vehicle = await this.service.getVehicleWithOperatorsAndEmployeesById(vehicleId, req.user);
                 return res.json(vehicle);
             } catch (error) {
                 if (error instanceof entityErrors.EntityNotFoundError) {

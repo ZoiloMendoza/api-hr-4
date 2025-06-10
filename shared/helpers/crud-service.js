@@ -673,6 +673,19 @@ class CRUDService extends BaseService {
                     include: [includeOpts],
                 });
 
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: this.modelName,
+                        entityId: elem.id,
+                        action: 'unassign',
+                        oldData: null,
+                        newData: { ids: toRemove.map((e) => e.id) },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+
                 return this.toJson(elem);
             } catch (error) {
                 logger.error(i18n.__('generic error', error.toString()));
@@ -768,6 +781,20 @@ class CRUDService extends BaseService {
                     await elem[`add${relatedModelName}`](relatedElems);
                 }
                 await elem.reload({ include: [includeOpts] });
+
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: this.modelName,
+                        entityId: elem.id,
+                        action: 'assign',
+                        oldData: null,
+                        newData: { ids: relatedElems.map((e) => e.id) },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+
 
                 return this.toJson(elem);
             } catch (error) {

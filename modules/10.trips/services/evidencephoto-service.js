@@ -15,9 +15,15 @@ class EvidencephotosService extends CRUDService {
         });
     }
 
-    async uploadEvidencePhoto(file, { evidenceId, description, actionRefId }) {
+    async uploadEvidencePhoto(file, { evidenceId, description, actionRefId }, user) {
         if (!file || !Buffer.isBuffer(file)) {
             throw new entityErrors.EntityNotFoundError('El archivo debe ser un buffer válido');
+        }
+
+        const loggedUser = user //zmm
+
+        if (!loggedUser) {
+            throw new entityErrors.EntityNotFoundError('Usuario no encontrado');
         }
 
         const name = `img-${crypto.randomUUID()}`;
@@ -27,6 +33,18 @@ class EvidencephotosService extends CRUDService {
             actionRefId,
             imageId: name,
         });
+        if (services.auditlogService) {
+            await services.auditlogService.createLog({
+                entityName: this.modelName,
+                entityId: created.id,
+                action: 'create',
+                oldData: null,
+                newData: created,
+                userId: loggedUser.id,
+                username: loggedUser.username,
+                companyId: loggedUser.company.id,
+            });
+        }
         await this.s3.upload(name, file);
         //const imageUrl = `${process.env.S3_URL}/${name}`;
         return this.toJson(created);

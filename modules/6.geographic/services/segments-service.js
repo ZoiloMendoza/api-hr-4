@@ -17,9 +17,15 @@ class SegmentsService extends CRUDService {
         destinationId,
         isFirst,
         segmentId,
+        user
     ) {
         const origin = await LocationsService.readById(originId);
         const destination = await LocationsService.readById(destinationId);
+
+        const loggedUser = user;
+        if (!loggedUser) {
+            throw new entityErrors.GenericError('Usuario no encontrado.');
+        }
 
         if (originId === destinationId) {
             throw new entityErrors.GenericError('El origen y el destino no pueden ser iguales.');
@@ -45,38 +51,38 @@ class SegmentsService extends CRUDService {
         };
 
         const promises = [];
-        if(optimalRoute){
+        if (optimalRoute) {
             promises.push(
                 this.cachedCalcularRuta('optima', parametros).then((result) => ({
                     type: 'optimalRoute',
                     geojson: result.polyline,
                     tollBoothsAmount: result.unit,
                     time: result.staticDuration,
-                    km: result.distanceMeters/1000,
+                    km: result.distanceMeters / 1000,
                     peaje: result.tolls,
                 }))
             )
-        } 
-        if(tollRoute){
+        }
+        if (tollRoute) {
             promises.push(
                 this.cachedCalcularRuta('cuota', parametros).then((result) => ({
                     type: 'tollRoute',
                     geojson: result.polyline,
                     tollBoothsAmount: result.unit,
                     time: result.staticDuration,
-                    km: result.distanceMeters/1000,
+                    km: result.distanceMeters / 1000,
                     peaje: result.tolls,
                 }))
             )
         }
-        if(freeRoute){
+        if (freeRoute) {
             promises.push(
                 this.cachedCalcularRuta('libre', parametros).then((result) => ({
                     type: 'freeRoute',
                     geojson: result.polyline,
                     tollBoothsAmount: result.unit,
                     time: result.staticDuration,
-                    km: result.distanceMeters/1000,
+                    km: result.distanceMeters / 1000,
                     peaje: result.tolls,
                 }))
             )
@@ -87,15 +93,15 @@ class SegmentsService extends CRUDService {
         const rutas = {};
 
         requests.forEach((request) => {
-                const { type, geojson, tollBoothsAmount, time, km, peaje } = request.value;
-                rutas[type] = {
-                    geojson,
-                    tollBoothsAmount,
-                    time,
-                    km,
-                    peaje,
-                    tollBooths: null
-                };
+            const { type, geojson, tollBoothsAmount, time, km, peaje } = request.value;
+            rutas[type] = {
+                geojson,
+                tollBoothsAmount,
+                time,
+                km,
+                peaje,
+                tollBooths: null
+            };
         });
 
         if (Object.keys(rutas).length === 0) {
@@ -105,17 +111,39 @@ class SegmentsService extends CRUDService {
         }
 
         //Es para actualizar kms y peaje del segmento cuando se consulta por primera vez
-        if (isFirst && segmentId && rutas.optimalRoute) {
-            const { km, tollBoothsAmount } = rutas.optimalRoute;
-            await segment.update(
-                {
+        if (isFirst && segmentId && formattedRoutes.optimalRoute) {
+            const { km, tollBoothsAmount } = formattedRoutes.optimalRoute;
+            const currentSegment = await segment.findOne({
+                where: { id: segmentId, active: true },
+            })
+            if (currentSegment) {
+                const oldData = {
+                    kms: currentSegment.kms,
+                    tollBoothsAmount: currentSegment.tollBoothsAmount,
+                }
+                await currentSegment.update({
                     kms: km,
                     tollBoothsAmount: tollBoothsAmount,
-                },
-                {
-                    where: { id: segmentId, active: true },
-                },
-            );
+                });
+
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: 'segment',
+                        entityId: currentSegment.id,
+                        action: 'update',
+                        oldData,
+                        newData: {
+                            kms: km,
+                            tollBoothsAmount: tollBoothsAmount,
+                        },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+            }
+
+
         }
 
         return rutas;

@@ -44,7 +44,7 @@ class VehiclesService extends CRUDService {
             where: {
                 id: vehicleId,
                 active: true,
-                companyId: loggedUser.companyId,
+                companyId: loggedUser.company.id,
             },
             attributes: { exclude: ['active', 'companyId', 'createdAt', 'updatedAt'] },
             include: [

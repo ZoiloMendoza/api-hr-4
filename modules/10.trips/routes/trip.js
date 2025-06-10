@@ -11,7 +11,7 @@ class TripsController extends CRUDController {
             logger.info('Creando un nuevo viaje');
             try {
                 const tripData = req.input;
-                const createdTrip = await this.service.createTripWithOrders(tripData);
+                const createdTrip = await this.service.createTripWithOrders(tripData, req.user);
                 return res.status(201).json(createdTrip);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {
@@ -30,7 +30,7 @@ class TripsController extends CRUDController {
                 const tripId = req.params.id;
                 const { status: newStatus } = req.input;
 
-                const updatedTrip = await this.service.changeTripStatus(tripId, newStatus);
+                const updatedTrip = await this.service.changeTripStatus(tripId, newStatus, req.user);
                 return res.status(200).json(updatedTrip);
             } catch (error) {
                 if (error instanceof entityErrors.GenericError) {

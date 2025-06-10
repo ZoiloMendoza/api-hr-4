@@ -26,7 +26,7 @@ class EvidencesController extends CRUDController {
                         req.input.evidencePhoto[i].imgFile = req.files[i].buffer;
                     }
                 }
-                const created = await this.service.createEvidenceWithPhotos(req.input);
+                const created = await this.service.createEvidenceWithPhotos(req.input, req.user);
                 return res.status(201).json(created);
             } catch (error) {
                 res.status(500).json([error.message]);
@@ -49,7 +49,7 @@ class EvidencesController extends CRUDController {
                 return res.status(400).json(req.__('Invalid query'));
             }
             try {
-                const { rows, count } = await this.service.getTripEvidenceWithPhotos(id, filter);
+                const { rows, count } = await this.service.getTripEvidenceWithPhotos(id, filter, req.user);
                 if (!rows.length) {
                     return res.status(404).json([req.__('No hay elementos relacionados')]);
                 }
