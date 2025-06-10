@@ -29,11 +29,11 @@ class SegmentsService extends CRUDService {
             throw new entityErrors.GenericError('Origen o destino no encontrados.');
         }
 
-        if (!origin.routingLineId || !origin.routingSourceId || !origin.routingTargetId) {
+        if (!origin.lat || !origin.lng) {
             throw new entityErrors.GenericError('Los datos de origen son incompletos.');
         }
 
-        if (!destination.routingLineId || !destination.routingSourceId || !destination.routingTargetId) {
+        if (!destination.lat || !destination.lat) {
             throw new entityErrors.GenericError('Los datos de destino son incompletos.');
         }
 
