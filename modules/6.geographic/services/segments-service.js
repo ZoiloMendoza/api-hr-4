@@ -111,8 +111,8 @@ class SegmentsService extends CRUDService {
         }
 
         //Es para actualizar kms y peaje del segmento cuando se consulta por primera vez
-        if (isFirst && segmentId && formattedRoutes.optimalRoute) {
-            const { km, tollBoothsAmount } = formattedRoutes.optimalRoute;
+        if (isFirst && segmentId && rutas.optimalRoute) {
+            const { km, tollBoothsAmount } = rutas.optimalRoute;
             const currentSegment = await segment.findOne({
                 where: { id: segmentId, active: true },
             })
