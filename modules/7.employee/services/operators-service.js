@@ -1,12 +1,28 @@
 const { operator } = models;
-const { CRUDService } = helpers;
+const { CRUDService, entityErrors } = helpers;
 
 class OperatorsService extends CRUDService {
     constructor() {
         super(operator);
     }
 
-    //METODO PARA ACTUALIZAR STATUS DE OPERADOR
-    //ANTES DE CAMBIAR STATUS, DEBEMOS REVISAR QUE NO ESTE ASIGNADO A UN VEHICULO
+    async update(id, data) {
+        if (data.status === 'available') {
+            const current = await this._readById(id);
+            if (current.status !== 'available') {
+                const assignedVehicle = await models.vehicle.findOne({
+                    where: { operatorId: id, active: true },
+                });
+                if (assignedVehicle) {
+                    throw new entityErrors.EntityNotFoundError(
+                        i18n.__(
+                            `El operador no puede cambiar su status, porque está asignado al vehículo con placas ${assignedVehicle.licensePlate}.`,
+                        ),
+                    );
+                }
+            }
+        }
+        return super.update(id, data);
+    }
 }
 module.exports = new OperatorsService();

@@ -73,6 +73,28 @@ class TripsService extends CRUDService {
 
         const newTrip = await this.create({ ...tripDetails, tripCode, vehicleId });
 
+        if (vehicleId) {
+            const vehicle = await models.vehicle.findByPk(vehicleId, {
+                where: { active: true },
+            });
+            if (vehicle) {
+                const oldStatus = vehicle.status;
+                await vehicle.update({ status: 'unavailable' });
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: 'vehicle',
+                        entityId: vehicle.id,
+                        action: 'update',
+                        oldData: { status: oldStatus },
+                        newData: { status: 'unavailable' },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+            }
+        }
+
         await order.update(
             {
                 tripId: newTrip.id, // Asignar el ID del viaje
@@ -164,22 +186,7 @@ class TripsService extends CRUDService {
         // Actualizar el estado del viaje
         const previousStatus = tripRecord.status;
         tripRecord.status = newStatus;
-        await tripRecord.save();
-
-        if (services.auditlogService) {
-            const loggedUser = this.getLoggedUser();
-            await services.auditlogService.createLog({
-                entityName: 'trip',
-                entityId: tripRecord.id,
-                action: 'update',
-                oldData: { status: previousStatus },
-                newData: { status: newStatus },
-                userId: loggedUser.id,
-                username: loggedUser.username,
-                companyId: loggedUser.company.id,
-            });
-        }
-
+        await this.update(tripId, { status: newStatus });
         // Actualizar la fecha de modificación en `triplog` para el nuevo estado
         const logEntry = await triplog.findOne({
             where: {
@@ -230,11 +237,174 @@ class TripsService extends CRUDService {
     }
 
     async update(id, data) {
-        const currentTrip = await this._readById(id);
-        if (data.vehicleId && data.vehicleId !== currentTrip.vehicleId) {
+        const loggedUser = this.getLoggedUser();
+        if (this.hasCompany) {
+            data.companyId = loggedUser.company.id;
+        }
+
+        const tripRecord = await this._readById(id);
+
+        if (data.vehicleId && data.vehicleId !== tripRecord.vehicleId) {
             await this.validateVehicleAndOperator(data.vehicleId);
         }
-        return super.update(id, data);
+
+        const previousData = { ...tripRecord.dataValues };
+
+        await tripRecord.update(data);
+
+        if (services.auditlogService) {
+            await services.auditlogService.createLog({
+                entityName: 'trip',
+                entityId: tripRecord.id,
+                action: 'update',
+                oldData: previousData,
+                newData: tripRecord.dataValues,
+                userId: loggedUser.id,
+                username: loggedUser.username,
+                companyId: loggedUser.company.id,
+            });
+        }
+
+        // Vehicle status updates
+        const prevVehicleId = previousData.vehicleId;
+        const newVehicleId = tripRecord.vehicleId;
+
+        if (prevVehicleId && prevVehicleId !== newVehicleId) {
+            const prevVehicle = await models.vehicle.findByPk(prevVehicleId, {
+                where: { active: true },
+            });
+            if (prevVehicle) {
+                const oldStatus = prevVehicle.status;
+                await prevVehicle.update({ status: 'available' });
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: 'vehicle',
+                        entityId: prevVehicle.id,
+                        action: 'update',
+                        oldData: { status: oldStatus },
+                        newData: { status: 'available' },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+            }
+        }
+
+        if (newVehicleId && newVehicleId !== prevVehicleId) {
+            const newVehicle = await models.vehicle.findByPk(newVehicleId, {
+                where: { active: true },
+            });
+            if (newVehicle) {
+                const oldStatus = newVehicle.status;
+                await newVehicle.update({ status: 'unavailable' });
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: 'vehicle',
+                        entityId: newVehicle.id,
+                        action: 'update',
+                        oldData: { status: oldStatus },
+                        newData: { status: 'unavailable' },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+            }
+        }
+
+        if (!newVehicleId && prevVehicleId) {
+            const prevVehicle = await models.vehicle.findByPk(prevVehicleId, {
+                where: { active: true },
+            });
+            if (prevVehicle) {
+                const oldStatus = prevVehicle.status;
+                await prevVehicle.update({ status: 'available' });
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: 'vehicle',
+                        entityId: prevVehicle.id,
+                        action: 'update',
+                        oldData: { status: oldStatus },
+                        newData: { status: 'available' },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+            }
+        }
+
+        if (previousData.active === true && tripRecord.active === false && previousData.vehicleId) {
+            const vehicle = await models.vehicle.findByPk(previousData.vehicleId, {
+                where: { active: true },
+            });
+            if (vehicle) {
+                const oldStatus = vehicle.status;
+                await vehicle.update({ status: 'available' });
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: 'vehicle',
+                        entityId: vehicle.id,
+                        action: 'update',
+                        oldData: { status: oldStatus },
+                        newData: { status: 'available' },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+            }
+        }
+
+        if (tripRecord.status === 'finished' && previousData.status !== 'finished') {
+            if (tripRecord.vehicleId) {
+                const vehicle = await models.vehicle.findByPk(tripRecord.vehicleId, {
+                    where: { active: true },
+                });
+                if (vehicle) {
+                    const oldStatus = vehicle.status;
+                    await vehicle.update({ status: 'available' });
+                    if (services.auditlogService) {
+                        await services.auditlogService.createLog({
+                            entityName: 'vehicle',
+                            entityId: vehicle.id,
+                            action: 'update',
+                            oldData: { status: oldStatus },
+                            newData: { status: 'available' },
+                            userId: loggedUser.id,
+                            username: loggedUser.username,
+                            companyId: loggedUser.company.id,
+                        });
+                    }
+                }
+            }
+
+            const ordersToUpdate = await order.findAll({
+                where: { tripId: tripRecord.id, active: true },
+            });
+
+            for (const ord of ordersToUpdate) {
+                const oldStatus = ord.status;
+                await ord.update({ status: 'delivered' });
+                if (services.auditlogService) {
+                    await services.auditlogService.createLog({
+                        entityName: 'order',
+                        entityId: ord.id,
+                        action: 'update',
+                        oldData: { status: oldStatus },
+                        newData: { status: 'delivered' },
+                        userId: loggedUser.id,
+                        username: loggedUser.username,
+                        companyId: loggedUser.company.id,
+                    });
+                }
+            }
+        }
+
+        const updatedTrip = await this._readById(id);
+        return this.toJson(updatedTrip);
+
     }
 }
 module.exports = new TripsService();
