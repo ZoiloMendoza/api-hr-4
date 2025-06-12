@@ -5,7 +5,7 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         // Eliminar todos los registros de la tabla 'employees' que dependen de 'EmployeeTypes'
         await queryInterface.sequelize.query(`
-            DELETE FROM employees
+            DELETE FROM Employees
             WHERE employeeTypeId IS NOT NULL;
         `);
 
