@@ -1,11 +1,11 @@
 'use strict';
 
 module.exports = (sequelize, DataTypes) => {
-    class Service extends helpers.BaseModel {
+    class SparePart extends helpers.BaseModel {
         static associate(models) {}
     }
 
-    Service.init(
+    SparePart.init(
         {
             refId: {
                 type: DataTypes.STRING,
@@ -15,24 +15,28 @@ module.exports = (sequelize, DataTypes) => {
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
-                unique: true,
+                comment: 'Nombre de la refaccion',
             },
-            frequencyKm: {
-                type: DataTypes.STRING,
+            cost: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0.0,
+                comment: 'Costo de la refacccion',
+            },
+            quantity: {
+                type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
-            },
-            description: {
-                type: DataTypes.STRING,
-            },
+                comment: 'Cantidad de refacciones',
+            }
         },
         {
             sequelize,
             tableName: false,
             timestamps: false,
-            modelName: 'Service',
+            modelName: 'SparePart',
         },
     );
 
-    return Service;
+    return SparePart;
 };
