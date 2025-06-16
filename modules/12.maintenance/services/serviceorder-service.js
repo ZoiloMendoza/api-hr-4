@@ -25,6 +25,8 @@ class ServiceOrdenService extends CRUDService {
         }
         newSparePart.refId = crypto.randomBytes(8).toString('hex');
         serviceOrdenDb.spareParts.push(newSparePart);
+        const total = newSparePart.cost*newSparePart.quantity;
+        serviceOrdenDb.total =  (parseFloat(serviceOrdenDb.total) + total);
 
         await this.update(serviceOrdenId, serviceOrdenDb);
 
@@ -52,8 +54,15 @@ class ServiceOrdenService extends CRUDService {
             throw new entityErrors.EntityNotFoundError(i18n.__('entity not found', 'Refaccion'));
         }
 
+        const currentSparePart = serviceOrdenDb.spareParts[sparePartIndex];
+        const lastTotal = currentSparePart.quantity * currentSparePart.cost;
+        const newTotal = updatedSparePart.quantity * updatedSparePart.cost;
+        
+        if(lastTotal !== newTotal){
+            serviceOrdenDb.total = parseFloat(serviceOrdenDb.total) - lastTotal + newTotal;
+        }
         serviceOrdenDb.spareParts[sparePartIndex] = {
-            ...serviceOrdenDb.spareParts[sparePartIndex],
+            ...currentSparePart,
             ...updatedSparePart,
         };
 
@@ -84,6 +93,8 @@ class ServiceOrdenService extends CRUDService {
         const deletedSparePart = serviceOrdenDb.spareParts[sparePartIndex];
 
         serviceOrdenDb.spareParts.splice(sparePartIndex, 1);
+        const total = deletedSparePart.cost*deletedSparePart.quantity;
+        serviceOrdenDb.total =  (parseFloat(serviceOrdenDb.total) - total);
 
         await this.update(serviceOrdenId, serviceOrdenDb);
 

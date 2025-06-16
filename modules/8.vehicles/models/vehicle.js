@@ -18,6 +18,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'vehicleId',
                 as: 'trips',
             });
+
+            Vehicle.hasMany(models.serviceorder, {
+                foreignKey: 'vehicleId',
+                as: 'serviceorders',
+            });
         }
     }
 
@@ -60,6 +65,11 @@ module.exports = (sequelize, DataTypes) => {
             },
             vehicleDescription: {
                 type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: null,
+            },
+            averageKmPerDay: {
+                type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
                 defaultValue: null,
             },

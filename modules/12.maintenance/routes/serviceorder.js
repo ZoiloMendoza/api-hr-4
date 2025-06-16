@@ -1,10 +1,11 @@
-const { serviceorder } = models;
+const { serviceorder, maintenance} = models;
 const { CRUDController, entityErrors, SearchResult } = helpers;
-const crypto = require('crypto');
 
 class MaintenanceController extends CRUDController {
     constructor() {
         super(serviceorder);
+        this.addRelation(maintenance, ['id']);
+
         this.addRoute('post', '/serviceorder/:id/sparepart', async (req, res) => {
             logger.info(`Adding a new spare part for service order ${req.params.id}`);
             try {

@@ -89,6 +89,47 @@ class MaintenanceController extends CRUDController {
                 return res.status(500).json([error.message]);
             }
         });
+
+        this.addRoute('get', '/upcoming-maintenances', async (req, res) => {
+            logger.info(`Getting upcoming Maintenances`);
+
+            delete req.query.start;
+            delete req.query.limit;
+
+            try {
+                const result = await this.service.getUpcomingMaintenances();
+                res.json(
+                    new SearchResult(
+                        result,
+                        1,
+                        result.length,
+                        result.length,
+                    ),
+                );
+            } catch (error) {
+                if (error instanceof entityErrors.EntityNotFoundError) {
+                    return res.status(404).json([error.message]);
+                }
+                return res.status(500).json([error.message]);
+            }
+        });
+
+        this.addRoute('get', '/upcoming-maintenance/:vehicleId', async (req, res) => {
+            logger.info(`Getting upcoming Maintenance`);
+
+            delete req.query.start;
+            delete req.query.limit;
+
+            try {
+                const result = await this.service.getUpcomingMaintenance(req.params.vehicleId);
+                res.json(result);
+            } catch (error) {
+                if (error instanceof entityErrors.EntityNotFoundError) {
+                    return res.status(404).json([error.message]);
+                }
+                return res.status(500).json([error.message]);
+            }
+        });
     }
 }
 
