@@ -136,68 +136,6 @@ module.exports = (sequelize, DataTypes) => {
         {
             sequelize,
             modelName: 'Trip',
-            hooks: {
-                async afterCreate(trip, options) {
-                    if (trip.vehicleId) {
-                        const vehicle = await models.vehicle.findByPk(trip.vehicleId, {
-                            where: { active: true },
-                        });
-                        if (vehicle) {
-                            await vehicle.update({ status: 'unavailable' });
-                        }
-                    }
-                },
-                async afterUpdate(trip, options) {
-                    // Si el vehículo se ha cambiado, actualiza el estado del vehículo anterior
-                    if (trip.vehicleId && trip.vehicleId !== trip._previousDataValues.vehicleId) {
-                        if (trip._previousDataValues.vehicleId) {
-                            const prevVehicle = await models.vehicle.findByPk(trip._previousDataValues.vehicleId, {
-                                where: { active: true },
-                            });
-                            if (prevVehicle) {
-                                await prevVehicle.update({ status: 'available' });
-                            }
-                        }
-
-                        const newVehicle = await models.vehicle.findByPk(trip.vehicleId, {
-                            where: { active: true },
-                        });
-                        if (newVehicle) {
-                            await newVehicle.update({ status: 'unavailable' });
-                        }
-                    }
-
-                    // If vehicle removed
-                    if (!trip.vehicleId && trip._previousDataValues.vehicleId) {
-                        const prevVehicle = await models.vehicle.findByPk(trip._previousDataValues.vehicleId, {
-                            where: { active: true },
-                        });
-                        if (prevVehicle) {
-                            await prevVehicle.update({ status: 'available' });
-                        }
-                    }
-
-                    // If trip finished, release vehicle and update orders only once
-                    if (
-                        trip.status === 'finished' &&
-                        trip._previousDataValues.status !== 'finished'
-                    ) {
-                        if (trip.vehicleId) {
-                            const vehicle = await models.vehicle.findByPk(trip.vehicleId, {
-                                where: { active: true },
-                            });
-                            if (vehicle) {
-                                await vehicle.update({ status: 'available' });
-                            }
-                        }
-
-                        await models.order.update(
-                            { status: 'delivered' },
-                            { where: { tripId: trip.id } },
-                        );
-                    }
-                },
-            },
         },
     );
     return Trip;

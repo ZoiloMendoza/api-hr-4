@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            tableName: 'evidences', //por alguna razón sequelize no reconoce el plural de evidence
+            tableName: 'Evidences', //por alguna razón sequelize no reconoce el plural de evidence
             modelName: 'Evidence',
         },
     );
