@@ -1,4 +1,4 @@
-  const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col, literal } = require("sequelize");
 
 /**
  * Recursively evaluates a value node for string expressions.
@@ -248,9 +248,16 @@ function translateAST(ast, baseModel) {
     if (!value.startsWith('%') && !value.endsWith('%')) {
       value = `%${value}%`;
     }
+
+    const assoc = node.left.path === "/" ? null : node.left.path.split("/")[1];
+    const alias = assoc
+      ? baseModel.associations[assoc].as
+      : baseModel.name;
+    const qualified = `${alias}.${field}`;
+
     return {
       target,
-      clause: literal(`CAST(${field} AS CHAR) LIKE '${value}'`)
+      clause: literal(`CAST(${qualified} AS CHAR) LIKE '${value}'`)
     };
   }
 
