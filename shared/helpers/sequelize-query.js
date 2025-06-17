@@ -146,11 +146,11 @@ function prefixClause(clause, prefix) {
     return clause;
   }
   const newClause = {};
-  for (const key in clause) {
-    if (key === Op.and || key === Op.or || key === Op.not || key.startsWith("Op.")) {
+  for (const key of Reflect.ownKeys(clause)) {
+    if (key === Op.and || key === Op.or || key === Op.not || typeof key === 'symbol' || (typeof key === 'string' && key.startsWith('Op.'))) {
       newClause[key] = prefixClause(clause[key], prefix);
     } else {
-      newClause[`$${prefix}.${key}$`] = prefixClause(clause[key], prefix);
+      newClause[`$${prefix}.${key.toString()}$`] = prefixClause(clause[key], prefix);
     }
   }
   return newClause;
