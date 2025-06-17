@@ -141,7 +141,7 @@ function prefixClause(clause, prefix) {
   }
   if (
     clause.constructor &&
-    (clause.constructor.name === "Fn" || clause.constructor.name === "Col")
+    ["Fn", "Col", "Literal"].includes(clause.constructor.name)
   ) {
     return clause;
   }
